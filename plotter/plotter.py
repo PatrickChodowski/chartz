@@ -1,8 +1,9 @@
-from flask import Blueprint, Flask, request, render_template
-from plots import Plots
+from flask import Blueprint, request, render_template
+from plotter.plots import Plots
 from bokeh.embed import components
 from bokeh.resources import INLINE
-from plotter_utils import handle_configs, read_config
+from plotter.plotter_utils import handle_configs
+
 js_resources = INLINE.render_js()
 css_resources = INLINE.render_css()
 

@@ -1,0 +1,254 @@
+:root {
+    --bg-color: #4d4d4d;
+    --bg-color-blue: #007fff;
+    --f-color: #7FFFD4;
+    --main-color3: #8b2131;
+    --main-color4: black;
+    --main-color5: white;
+    --main-color6: #4F92CE;
+    --main-color7: #bfbfbf;
+
+    --main-card-width: 290px;
+}
+
+
+#main_nav_bar {
+    display: inline;
+}
+
+.game_card {
+    background-color: #FAEBD7;
+}
+
+.card_list {
+    background-color: #F0F8FF;
+}
+
+.boxscore_table {
+    border-style: none;
+    border-width: 0px;
+}
+
+#dash_content{
+    background-color: var(--bg-color);
+}
+
+body {
+    background-color: var(--bg-color) !important;
+}
+
+
+#footer_content {
+    background-color: var(--bg-color);
+}
+
+
+#filters_grid {
+    padding: 20px;
+    margin-left: 10px;
+    margin-right: 5px;
+    height: 100%;
+    overflow-x: hidden;
+    max-width: 180px;
+    background-color: var(--bg-color-blue);
+    transition: 0.5s;
+}
+
+.filter_value {
+    max-width: 300px;
+    display: inline;
+    margin-left: 25px;
+}
+
+.selected_filter_area {
+    padding-top: 10px;
+    padding-bottom: 10px;
+    padding-left: 20px;
+
+}
+
+#dash_grid {
+    background-color: var(--bg-color);
+    margin-top: 20px;
+}
+
+.plot_frame {
+    border-radius: 5px;
+    padding-left: 0px;
+    padding-right: 0px;
+    border-width: 0px;
+    margin-right: 10px;
+    margin-bottom: 5px;
+    width: 470px;
+    max-width: 470px;
+}
+
+.plot_menu {
+    max-height: 6px;
+    margin-left: 0px;
+    margin-bottom: 0px;
+    padding-right: 10px;
+    float: right;
+    position: relative;
+    z-index: 999;
+}
+
+.no-gutter > [class*='col-'] {
+    padding-right:5px;
+    padding-left:5px;
+}
+
+.rm_plot {
+    font-size: 10pt;
+    margin-left: 30px;
+    background-color: var(--bg-color);
+    color: grey;
+    border-width: 0px;
+    border-style: none;
+}
+.rm_plot:hover {
+    text-decoration: none;
+    color: var(--f-color);
+}
+
+.button_link {
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        margin-left: 1px;
+        cursor: pointer;
+        font-size: 12pt;
+        background-color: var(--bg-color);
+        color: grey;
+        font: 400 13.3333px Arial;
+        padding-top: 1px;
+        padding-bottom: 2px;
+        padding-left: 2px;
+        padding-right: 2px;
+      }
+
+.button_link:hover {
+    text-decoration: none;
+    color: var(--f-color);
+}
+
+input[type=text] {
+  padding: 5px 5px;
+  margin: 5px 0;
+  box-sizing: border-box;
+  width: 100%;
+  font-size: 10px;
+}
+input[type=number] {
+  padding: 5px 5px;
+  margin: 5px 0;
+  box-sizing: border-box;
+  width: 100%;
+  font-size: 10px;
+}
+
+select {
+  padding: 5px 5px;
+  margin: 5px 0;
+  box-sizing: border-box;
+  width: 100%;
+  font-size: 10px;
+}
+
+.options {
+    font-size: 10px;
+}
+
+label {
+    width: 100%;
+    font-size: 10px;
+}
+
+#add_plot {
+    width: 100%;
+}
+#open_filters {
+    width: 100%;
+}
+
+.operator_selector {
+    width: 60px;
+    margin-left: 10px;
+}
+
+
+.modal-content {
+    width: 700px !important;
+}
+
+.plot_title {
+    color: var(--f-color) !important;
+    font-size: 10px !important;
+}
+
+.slick-cell {
+    background-color: var(--bg-color) !important;
+    color: var(--f-color) !important;
+    border-bottom: 0.1px dotted #bfbfbf !important;
+    font-size: 16px !important;
+    border-right: 0px none var(--bg-color) !important;
+    border-left: 0px none var(--bg-color) !important;
+}
+
+.slick-header-column {
+    background-color: var(--bg-color) !important;
+    color: var(--f-color) !important;
+    background-image: none !important;
+    border-right: 0px none var(--bg-color) !important;
+    border-left: 0px none var(--bg-color) !important;
+}
+
+.choices__item--selectable {
+    max-width: 200px !important;
+}
+
+.choices__list {
+    max-width: 200px !important;
+}
+
+.choices__input {
+    padding-left: 0px !important;
+    font-size: 12px !important;
+}
+
+.choices__item {
+    max-width: 200px !important;
+}
+.choices__list--multiple {
+    max-width: 200px !important;
+}
+
+.choices__item--selectable {
+    max-width: 200px !important;
+    padding-right: 10px !important;
+    padding-left: 10px !important;
+    font-size: 15px !important;
+}
+
+.choices__placeholder {
+    display: none !important;
+    width: 0px !important;
+}
+
+@media (min-width: 640px)
+.choices__list--dropdown .choices__item--selectable {
+    padding-right: 0px !important;
+}
+
+
+.error_msg {
+    color: red !important;
+    font-size: 14px !important;
+}
+
+#add_filters_window_list {
+    max-height: 600px;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+

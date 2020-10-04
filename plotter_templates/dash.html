@@ -1,0 +1,97 @@
+<html>
+    <head>
+            <title>
+                Plotter
+            </title>
+        <link rel="stylesheet" href="plotter_static/styles.css">
+        <link rel="stylesheet" href="plotter_static/choices.css">
+        <link rel="stylesheet" href="plotter_static/bootstrap.css">
+        <script src="plotter_static/jquery.js"></script>
+        <script src="plotter_static/bootstrap.js"></script>
+        <script src="plotter_static/choices.min.js"></script>
+        <script src="plotter_static/axios.min.js"></script>
+        <script src="plotter_static/script.js"></script>
+
+    </head>
+    <body>
+
+    <header>
+    </header>
+
+    <div class="content">
+
+
+
+
+    <div class="row" id="dash_content">
+        <div class="col-md-2" id="filters_grid">
+
+            {% for f_key, value in filters['main_filters'].items() %}
+                {% if value['type'] == 'radio' %}
+                    {% with id=value['value'], options=value['options'], cls='main_filter' %}
+                        {% include "radio_input.html" %}
+                    {% endwith %}
+                {% elif value['type'] == 'checkbox' %}
+                    {% with id=value['value'], options= value['options'], cls='main_filter' %}
+                        {% include "checkbox_input.html" %}
+                    {% endwith %}
+                {% elif value['type'] =='select' %}
+                    {% with id=value['value'], options= value['options'], name=value['name'], cls='main_filter' %}
+                        {% include "select_input.html" %}
+                    {% endwith %}
+                {% elif value['type'] =='choices' %}
+                    {% with id=value['value'], options= value['options'], name=value['name'], cls='main_filter' %}
+                        {% include "choices.html" %}
+                    {% endwith %}
+                {% elif value['type'] == 'number' %}
+                    {% with id=value['value'], options= value['options'], cls='main_filter' %}
+                        {% include "number_input.html" %}
+                    {% endwith %}
+                {% endif %}
+            {% endfor %}
+            <br><br>
+            <button id="open_filters" type="button" class="btn btn-primary" data-toggle="modal" data-target="modal">Add filters</button>
+            <br><br>
+            <button id="add_plot" type="button" class="btn btn-primary" > Add plot</button>
+        </div>
+
+        <div class="col-md-9" >
+            <div class="row no-gutter sortable"  id="dash_grid">
+            </div>
+        </div>
+
+              <div id="filters_window" class="modal" tabindex="-1" role="dialog">
+                  <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                      <div class="modal-header">
+                        <h5 class="modal-title">Add more filters to the plot</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                          <span aria-hidden="true">&times;</span>
+                        </button>
+                      </div>
+                      <div class="modal-body">
+                          <div id="add_filters_window">
+                                 {% with id=filters['add_filters']['value'], options= filters['add_filters']['options'], name=filters['add_filters']['name'] %}
+                                    {% include "select_input.html" %}
+                                {% endwith %}
+                          <div id="add_filters_window_list">
+                          </div>
+                           <br>
+                             <div id="add_having_window">
+                                    {% with id='having_metrics', name='Having clause' %}
+                                        {% include "text_input.html" %}
+                                    {% endwith %}
+                             </div>
+                         </div>
+                      </div>
+                      <div class="modal-footer">
+                      </div>
+                    </div>
+                  </div>
+              </div>
+    </div>
+    </div>
+    </body>
+
+
+</html>

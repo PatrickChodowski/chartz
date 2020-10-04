@@ -11,5 +11,5 @@ setup(
     version='0.1',
     license='MIT',
     description='Flask module allowing to build dashboards for data defined in single yml files',
-    long_description=open('README.txt').read(),
+    long_description=open('README.rst').read(),
 )

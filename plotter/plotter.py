@@ -2,8 +2,9 @@ from flask import Blueprint, request, render_template
 from plotter.plots import Plots
 from bokeh.embed import components
 from bokeh.resources import INLINE
-from plotter.plotter_utils import handle_configs
+from plotter.plotter_utils import handle_configs, setup_env
 
+setup_env()
 js_resources = INLINE.render_js()
 css_resources = INLINE.render_css()
 

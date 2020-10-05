@@ -23,3 +23,14 @@ def handle_configs():
     return setup
 
 
+def setup_env():
+    import os
+    dirp = './plotter_configs'
+    if not os.path.exists(dirp):
+        os.makedirs(dirp)
+
+    files = ['settings.yaml', 'filters.yaml', 'data_sources.yaml']
+    for file in files:
+        if not os.path.exists(f"{dirp}/{file}"):
+            with open(f"{dirp}/{file}", "a+") as f:
+                f.write()

@@ -174,21 +174,54 @@ unique_ds_name:
 """
     return ds_example
 
-
-def setup_env():
+def create_example_main():
     import os
-    dirp = './plotter_configs'
-    if not os.path.exists(dirp):
-        os.makedirs(dirp)
+    example_main_text = """
+from flask import Flask
+import os
 
+SECRET_KEY = os.urandom(32)
+from plotter.plotter import plotter
+app = Flask(__name__)
+app.config['SECRET_KEY'] = SECRET_KEY
+app.config["FLASK_DEBUG"] = 0
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
+app.register_blueprint(plotter)
+
+@app.route('/', methods=['POST','GET'])
+def index():
+    return 'hello! plotter will be on /dash!'
+
+
+if __name__ == '__main__':
+   app.run(port=5001, debug=False)    
+"""
+    if not os.path.exists("example_main.py"):
+        with open(f"example_main.py", "a+") as f:
+            f.write(example_main_text)
+
+def setup_env(force_recreate=True):
+    import os
+    dir_plotter = './plotter_configs'
     function_dict = {'settings': create_settings,
                      'filters': create_filters,
                      'data_sources': create_data_sources}
 
     files = ['settings.yaml', 'filters.yaml', 'data_sources.yaml']
-    for file in files:
-        if not os.path.exists(f"{dirp}/{file}"):
+    if force_recreate:
+        os.makedirs(dir_plotter)
+        for file in files:
             f_name = file.replace('.yaml', '')
             txt = function_dict[f_name]()
-            with open(f"{dirp}/{file}", "a+") as f:
+            with open(f"{dir_plotter}/{file}", "a+") as f:
                 f.write(txt)
+    else:
+        if not os.path.exists(dir_plotter):
+            os.makedirs(dir_plotter)
+        for file in files:
+            if not os.path.exists(f"{dir_plotter}/{file}"):
+                f_name = file.replace('.yaml', '')
+                txt = function_dict[f_name]()
+                with open(f"{dir_plotter}/{file}", "a+") as f:
+                    f.write(txt)
+    create_example_main()

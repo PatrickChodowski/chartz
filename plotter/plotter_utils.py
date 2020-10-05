@@ -225,3 +225,12 @@ def setup_env(force_recreate=True):
                 with open(f"{dir_plotter}/{file}", "a+") as f:
                     f.write(txt)
     create_example_main()
+
+
+
+def check_package_data(file):
+    import importlib.resources as pkg_resources
+    from . import plotter_templates
+    template = pkg_resources.read_text(plotter_templates, file)
+    print(template)
+    return template

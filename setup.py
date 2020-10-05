@@ -6,9 +6,10 @@ setup(
     author='Patrick Chodowski',
     author_email='chodowski.patrick@gmail.com',
     packages=['plotter'],
+    package_data={'plotter': ['plotter_templates/*.html', 'plotter_static/*.js', 'plotter_static/*.css']},
     install_requires=['flask', 'bokeh', 'google-cloud-bigquery', 'pandas', 'pyyaml'],
     # *strongly* suggested for sharing
-    version='0.1',
+    version='0.1.3',
     license='MIT',
     description='Flask module allowing to build dashboards for data defined in single yml files',
     long_description=open('README.rst').read(),

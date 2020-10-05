@@ -8,6 +8,11 @@ js_resources = INLINE.render_js()
 css_resources = INLINE.render_css()
 
 setup = handle_configs()
+try:
+    setup['settings']['plot_height']
+except KeyError:
+    print('Have you created settings.yaml? Try running setup_env() frp, plotter.plotter_utils as a first step')
+
 plots = Plots(plot_height=setup['settings']['plot_height'],
               plot_width=setup['settings']['plot_width'],
               f_color=setup['settings']['f_color'],

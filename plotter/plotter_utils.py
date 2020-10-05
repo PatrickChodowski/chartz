@@ -5,22 +5,32 @@ def read_config(path):
     return config
 
 
+
 def handle_configs():
-    import numpy as np
-    cnfg_path = 'plotter_configs/'
-    filters = read_config(f'{cnfg_path}filters.yaml')
-    settings = read_config(f'{cnfg_path}settings.yaml')
-    data_sources = read_config(f'{cnfg_path}data_sources.yaml')
-    source = settings['data_source']
-    a = np.where([dsd['active'] for dsd in source])[0][0]
-    source = source[a]
-    setup = dict()
-    setup['source'] = source
-    setup['settings'] = settings
-    setup['filters'] = filters
-    setup['add_filters'] = [df['value'] for df in filters['add_filters']['options']]
-    setup['data_sources'] = data_sources
-    return setup
+    try:
+        config_path = './plotter_configs/'
+        filters = read_config(f'{config_path}filters.yaml')
+        settings = read_config(f'{config_path}settings.yaml')
+        data_sources = read_config(f'{config_path}data_sources.yaml')
+        source = settings['data_source']
+
+        act_check = [dsd['active'] for dsd in source]
+        which_active = [i for i, x in enumerate(act_check) if x][0]
+        assert isinstance(which_active, int)
+        source = source[which_active]
+
+        setup = dict()
+        setup['source'] = source
+        setup['settings'] = settings
+        setup['filters'] = filters
+        setup['add_filters'] = [df['value'] for df in filters['add_filters']['options']]
+        setup['data_sources'] = data_sources
+        return setup
+    except AssertionError:
+        if type(which_active) != int:
+            print('Please make sure you have exactly 1 active data source in data_sources.yaml')
+    except FileNotFoundError as e:
+        print(e)
 
 
 def create_settings():
@@ -107,35 +117,35 @@ add_filters:
       value: ''
     - name: 'Transaction Date'
       value: 'transaction_date'
-    - name: 'Email"
+    - name: 'Email'
       value: 'customer_email'
     - name: 'Product Name'
       value: 'product_name'
 
 dim_filters:
   transaction_date:
-    name: "Transaction Date"
-    value: "transaction_date"
+    name: 'Transaction Date'
+    value: 'transaction_date'
     operators:
-      - "eq"
-      - "lt"
-      - "gt"
+      - 'eq'
+      - 'lt'
+      - 'gt'
     duplicable: True
-    type: "text"
+    type: 'text'
   customer_email:
-    name: "Email"
-    value: "customer_email"
+    name: 'Email'
+    value: 'customer_email'
     operators:
-      - "eq"
+      - 'eq'
     duplicable: False
-    type: "text" 
+    type: 'text'
   product_name:
-    name: "Product Name"
-    value: "product_name"
+    name: 'Product Name'
+    value: 'product_name'
     operators:
-      - "eq"
+      - 'eq'
     duplicable: False
-    type: "text"      
+    type: 'text'      
 
     """
     return filters_example

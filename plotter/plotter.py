@@ -2,12 +2,13 @@ from flask import Blueprint, request, render_template
 from plotter.plots import Plots
 from bokeh.embed import components
 from bokeh.resources import INLINE
-from plotter.plotter_utils import handle_configs
+from plotter.plotter_utils import handle_configs, get_paths
 
 js_resources = INLINE.render_js()
 css_resources = INLINE.render_css()
 
 setup = handle_configs()
+resources_path = get_paths()
 try:
     setup['settings']['plot_height']
 except KeyError:
@@ -35,8 +36,8 @@ plot_type_dict = {'bar':    plots.plot_bar,
 
 @plotter.route('/dash', methods=['POST', 'GET'])
 def dash():
-    return render_template('dash.html',
-                           filters=setup['filters'])
+    return render_template(f'{resources_path}/dash.html',
+                             filters=setup['filters'])
 
 @plotter.route('/get_setup/<what>', methods=['POST'])
 def get_setup(what):

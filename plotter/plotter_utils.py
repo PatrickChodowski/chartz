@@ -226,13 +226,8 @@ def setup_env(force_recreate=True):
                     f.write(txt)
     create_example_main()
 
-
-
-def check_package_data(file):
-    import importlib.resources as pkg_resources
-    from . import plotter_templates
-    template = pkg_resources.read_text(plotter_templates, file)
-    print(template)
-    return template
-
-#https://stackoverflow.com/questions/6028000/how-to-read-a-static-file-from-inside-a-python-package/20885799
+def get_paths():
+    import importlib
+    resources_path0 = importlib.import_module('plotter.plotter_templates')
+    resources_path = str(resources_path0.__path__).replace("_NamespacePath(['", '').replace("plotter_templates'])", '')
+    return resources_path

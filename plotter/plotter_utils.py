@@ -234,3 +234,5 @@ def check_package_data(file):
     template = pkg_resources.read_text(plotter_templates, file)
     print(template)
     return template
+
+#https://stackoverflow.com/questions/6028000/how-to-read-a-static-file-from-inside-a-python-package/20885799

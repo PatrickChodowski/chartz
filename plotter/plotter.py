@@ -36,7 +36,7 @@ plot_type_dict = {'bar':    plots.plot_bar,
 
 @plotter.route('/dash', methods=['POST', 'GET'])
 def dash():
-    return render_template(f'{resources_path}/dash.html',
+    return render_template(f'{resources_path}plotter_templates/dash.html',
                              filters=setup['filters'])
 
 @plotter.route('/get_setup/<what>', methods=['POST'])
@@ -86,7 +86,7 @@ def plot(type):
             return f'<a class="error_msg"> {p} </a>'
         else:
             p_script, p_div = components(p)
-            html_file = render_template('plot.html',
+            html_file = render_template(f'{resources_path}plotter_templates/plot.html',
                                         bokeh_js=js_resources,
                                         bokeh_css=css_resources,
                                         plot_script=p_script,

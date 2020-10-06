@@ -97,8 +97,8 @@ $("document").ready(function(){
 
     // handle settings info
     function handle_settings(x){
-        bg_color = settings['bg_color'];
-        document.body.style.background-color = bg_color;
+        var bg_color = settings['bg_color'];
+        document.body.style.backgroundColor = bg_color;
     };
 
     // handle filters info

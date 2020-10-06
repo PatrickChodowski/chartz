@@ -9,7 +9,6 @@ from bokeh.transform import factor_cmap
 # todo: handle operators -- czy moze wszystkie filtry jako tekst xd
 # todo: improve styling of forms
 # todo: get css from settings
-# todo: convert whole plotify to library and import (workflow to deploy changes to library from here)
 # todo: (maybe last step ever- cleanup script.js and styles.css script) reorgenize in some logical order
 
 

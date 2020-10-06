@@ -11,6 +11,9 @@ $("document").ready(function(){
         'placeholderValue': ''
     });
 
+    get_setup(what='settings');
+
+
     // dictionary of functions to avoid if elses
     setup_handler_dict = {'settings':     handle_settings,
                           'filters':      handle_filters,
@@ -94,7 +97,8 @@ $("document").ready(function(){
 
     // handle settings info
     function handle_settings(x){
-        console.log(x);
+        bg_color = settings['bg_color'];
+        document.body.style.background-color = bg_color;
     };
 
     // handle filters info

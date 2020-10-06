@@ -2,44 +2,15 @@
     --bg-color: #4d4d4d;
     --bg-color-blue: #007fff;
     --f-color: #7FFFD4;
-    --main-color3: #8b2131;
-    --main-color4: black;
-    --main-color5: white;
-    --main-color6: #4F92CE;
-    --main-color7: #bfbfbf;
-
-    --main-card-width: 290px;
 }
 
 
-#main_nav_bar {
-    display: inline;
-}
-
-.game_card {
-    background-color: #FAEBD7;
-}
-
-.card_list {
-    background-color: #F0F8FF;
-}
-
-.boxscore_table {
-    border-style: none;
-    border-width: 0px;
-}
-
-#dash_content{
+#dash_content {
     background-color: var(--bg-color);
 }
 
 body {
     background-color: var(--bg-color) !important;
-}
-
-
-#footer_content {
-    background-color: var(--bg-color);
 }
 
 

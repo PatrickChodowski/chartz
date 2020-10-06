@@ -37,9 +37,10 @@ def create_settings():
     settings_example = """
 max_metrics: -1
 bg_color: '#4d4d4d'
+filters_bg_color: '#007fff'
 f_color: '#7FFFD4'
-plot_height: 400
-plot_width: 470
+plot_height: '400px'
+plot_width: '470px'
 plot_caching: False
 
 data_source:

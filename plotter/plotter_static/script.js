@@ -1,6 +1,7 @@
 
 $("document").ready(function(){
 
+    get_setup(what='settings');
     // global variables
     f_vars = {};
     query_logger = {};
@@ -10,9 +11,6 @@ $("document").ready(function(){
         'placeholder': false,
         'placeholderValue': ''
     });
-
-    get_setup(what='settings');
-
 
     // dictionary of functions to avoid if elses
     setup_handler_dict = {'settings':     handle_settings,
@@ -97,8 +95,13 @@ $("document").ready(function(){
 
     // handle settings info
     function handle_settings(x){
-        var bg_color = settings['bg_color'];
-        document.body.style.backgroundColor = bg_color;
+        let root = document.documentElement;
+        root.style.setProperty('--bg-color', x['bg_color']);
+        root.style.setProperty('--f-color', x['f_color']);
+        root.style.setProperty('--filters-bg-color', x['filters_bg_color']);
+        root.style.setProperty('--plot-width', x['plot_width']);
+        root.style.setProperty('--plot-height', x['plot_height']);
+
     };
 
     // handle filters info

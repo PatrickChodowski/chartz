@@ -1,16 +1,21 @@
 :root {
-    --bg-color: #4d4d4d;
-    --bg-color-blue: #007fff;
     --f-color: #7FFFD4;
+    --bg-color: #4d4d4d;
+    --filters-bg-color: #007fff;
+    --plot-width: 470px;
+    --plot-height: 400px;
 }
 
-
-#dash_content {
+#dash_content{
     background-color: var(--bg-color);
 }
 
 body {
     background-color: var(--bg-color) !important;
+}
+
+#dash_grid {
+    background-color: var(--bg-color);
 }
 
 
@@ -21,8 +26,8 @@ body {
     height: 100%;
     overflow-x: hidden;
     max-width: 180px;
-    background-color: var(--bg-color-blue);
     transition: 0.5s;
+    background-color: var(--filters-bg-color);
 }
 
 .filter_value {
@@ -38,10 +43,7 @@ body {
 
 }
 
-#dash_grid {
-    background-color: var(--bg-color);
-    margin-top: 20px;
-}
+
 
 .plot_frame {
     border-radius: 5px;
@@ -50,8 +52,8 @@ body {
     border-width: 0px;
     margin-right: 10px;
     margin-bottom: 5px;
-    width: 470px;
-    max-width: 470px;
+    width: var(--plot-width);
+    max-width: var(--plot-width);
 }
 
 .plot_menu {
@@ -62,6 +64,8 @@ body {
     float: right;
     position: relative;
     z-index: 999;
+    width: var(--plot-width);
+    max-width: var(--plot-width);
 }
 
 .no-gutter > [class*='col-'] {
@@ -72,7 +76,7 @@ body {
 .rm_plot {
     font-size: 10pt;
     margin-left: 30px;
-    background-color: var(--bg-color);
+    background-color: inherit;
     color: grey;
     border-width: 0px;
     border-style: none;
@@ -89,7 +93,7 @@ body {
         margin-left: 1px;
         cursor: pointer;
         font-size: 12pt;
-        background-color: var(--bg-color);
+        background-color: inherit;
         color: grey;
         font: 400 13.3333px Arial;
         padding-top: 1px;
@@ -170,8 +174,8 @@ label {
     background-color: var(--bg-color) !important;
     color: var(--f-color) !important;
     background-image: none !important;
-    border-right: 0px none var(--bg-color) !important;
-    border-left: 0px none var(--bg-color) !important;
+    border-right: 0px none var(--bg-color)  !important;
+    border-left: 0px none var(--bg-color)  !important;
 }
 
 .choices__item--selectable {

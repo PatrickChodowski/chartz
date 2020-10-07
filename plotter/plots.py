@@ -3,7 +3,7 @@ from bokeh.models import ColumnDataSource, Title
 from bokeh.plotting import figure
 from bokeh.transform import factor_cmap
 
-
+# todo: fix cache plots
 # todo: dokumentacja + porzadne readme
 
 # todo: kto jest w jakim percentylu
@@ -61,7 +61,7 @@ class Plots:
             project=self.source['project'],
         )
 
-    def _connect_postgresql(self, **args):
+    def _connect_postgresql(self):
         from sqlalchemy import create_engine
         db_string = f"postgres://{self.source['user']}:{self.source['password']}@{self.source['host']}:{self.source['port']}/{self.source['database']}"
         self.client = create_engine(db_string)

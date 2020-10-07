@@ -37,7 +37,7 @@ class Plots:
                     'bigquery': self._connect_bigquery,
                     'postgresql': self._connect_postgresql
                 }
-                con_dict[self.source['source']](**params)
+                con_dict[self.source['source']]()
             except AssertionError:
                 return 'Make sure that active source in settings is one of [bigquery. postgresql]'
         else:

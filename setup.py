@@ -13,7 +13,7 @@ setup(
                               'plotter_static/bootstrap/css/*.map',
                               'plotter_static/bootstrap/js/*.js',
                               'plotter_static/bootstrap/js/*.map']},
-    install_requires=['flask', 'bokeh', 'google-cloud-bigquery', 'pandas', 'pyyaml'],
+    install_requires=['flask', 'bokeh', 'google-cloud-bigquery', 'pandas', 'pyyaml', 'sqlalchemy'],
     # *strongly* suggested for sharing
     version='0.3.0',
     license='MIT',

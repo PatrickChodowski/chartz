@@ -49,7 +49,19 @@ data_source:
      project: 'project_name'
      schema: 'dash'
      sa_path: 'sa_file_path.json'
-     active: True"""
+     active: True
+   
+   - name: 'pgsql'
+     source: 'postgresql'
+     user: 'username'
+     password: 'password'
+     host: '127.0.0.1'
+     port: '5432'
+     database: 'exampledb'
+     schema: 'dash'
+     active: False
+
+     """
     return settings_example
 
 

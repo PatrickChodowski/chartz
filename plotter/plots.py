@@ -3,6 +3,9 @@ from bokeh.models import ColumnDataSource, Title
 from bokeh.plotting import figure
 from bokeh.transform import factor_cmap
 
+# todo: postgres handler
+# todo: dokumentacja + porzadne readme
+
 # todo: kto jest w jakim percentylu
 # todo: handle operators -- czy moze wszystkie filtry jako tekst xd
 # todo: improve styling of forms
@@ -20,36 +23,64 @@ class Plots:
         self.data_sources = data_sources
 
         self.title_text = None
-        self.con = None
+        self.client = None
+        self.con_q = {
+                    'bigquery': self._data_bigquery,
+                    'postgresql': self._data_sql
+                }
 
-    def _handle_source(self, **params):
+    def _handle_connection(self, **params):
+        if self.client is None:
+            try:
+                assert self.source['name'] in ['bigquery', 'postgresql']
+                con_dict = {
+                    'bigquery': self._connect_bigquery,
+                    'postgresql': self._connect_postgresql
+                }
+                con_dict[self.source['name']](**params)
+            except AssertionError:
+                return 'Make sure that active source in settings is one of [bigquery. postgresql]'
+        else:
+            pass
+
+    def _handle_data(self, **params):
         args = self.source
         all_params = {**args, **params}
-        df, metrics = self._data_bigquery(**all_params)
+        self._handle_connection(**params)
+        sql, metrics = self._make_query(**all_params)
+        df = self.con_q[self.source['name']](sql)
         return df, metrics
 
-    def check_plot_cache(self, settings, url):
-        if settings['plot_caching']:
-            if settings['plot_cache_storage'] == 'local':
-                import os.path
-                return os.path.exists(settings['plot_local_cache'] + '/' + url + '.html')
-            elif settings['plot_cache_storage'] == 'gcpbucket':
-                path = f"{settings['plot_gcpbucket_path']}{url}.html"
-                blob = bucket.blob(path)
-                return blob.exists()
-            else:
-                return False
-        else:
-            return False
-
-    def _data_bigquery(self, **args):
+    def _connect_bigquery(self):
         from google.cloud import bigquery
         from google.oauth2 import service_account
-        credentials = service_account.Credentials.from_service_account_file(args['sa_path'])
+        credentials = service_account.Credentials.from_service_account_file(self.source['sa_path'])
         self.client = bigquery.Client(
             credentials=credentials,
-            project=args['project'],
+            project=self.source['project'],
         )
+
+    def _connect_postgresql(self, **args):
+        from sqlalchemy import create_engine
+        db_string = f"postgres://{self.source['user']}:{self.source['password']}@{self.source['host']}:{self.source['port']}/{self.source['database']}"
+        self.client = create_engine(db_string)
+
+    def _data_bigquery(self, sql):
+        df = self.client.query(query=sql).to_dataframe()
+        df = df.round(3)
+        if df.shape[0] == 0:
+            raise ValueError(f"""Value error: Empty dataset. Please double check query: {sql}""")
+        return df
+
+    def _data_sql(self, sql):
+        import pandas as pd
+        df = pd.read_sql(sql, con=self.client)
+        df = df.round(3)
+        if df.shape[0] == 0:
+            raise ValueError(f"""Value error: Empty dataset. Please double check query: {sql}""")
+        return df
+
+    def _make_query(self, **args):
         possible_calcs = self.data_sources[args['source']]['calculations']
         calcs_dict = dict((key, d[key]) for d in possible_calcs for key in d)
         calcs = list(calcs_dict.keys())
@@ -112,18 +143,14 @@ FROM {args['project']}.{args['schema']}.{df_name} WHERE 1=1
         obl_txt = f" ORDER BY {metrics[0]} DESC LIMIT {args['show_top_n']} "
         sql += obl_txt
         print(sql)
-        df = self.client.query(query=sql).to_dataframe()
-        df = df.round(3)
-        return df, metrics
-        if df.shape[0] == 0:
-            raise ValueError(f"""Value error: Empty dataset. Please double check query: {sql}""")
+        return sql, metrics
 
     def plot_box(self, **params):
         import math
         from statistics import median
         import numpy as np
 
-        df, metrics = self._handle_source(**params)
+        df, metrics = self._handle_data(**params)
         metric = metrics[0]
 
         df[metric] = np.nan_to_num(df[metric])
@@ -180,7 +207,7 @@ FROM {args['project']}.{args['schema']}.{df_name} WHERE 1=1
         import math
         from statistics import median
         import numpy as np
-        df, metrics = self._handle_source(**params)
+        df, metrics = self._handle_data(**params)
 
         try:
             df.sort_values(params['dimensions'], inplace=True, ascending=True)
@@ -206,7 +233,7 @@ FROM {args['project']}.{args['schema']}.{df_name} WHERE 1=1
         import math
         from statistics import median
         try:
-            df, metrics = self._handle_source(**params)
+            df, metrics = self._handle_data(**params)
             source_aggr = ColumnDataSource(df)
             metric = metrics[0]
             up_limit = int(round(math.ceil(max(df[metric])) + median(df[metric].values) * 0.1))
@@ -241,7 +268,7 @@ FROM {args['project']}.{args['schema']}.{df_name} WHERE 1=1
         from statistics import median
 
         try:
-            df, metrics = self._handle_source(**params)
+            df, metrics = self._handle_data(**params)
             metric1 = metrics[0]
             metric2 = metrics[1]
             source_aggr = ColumnDataSource(df)
@@ -293,7 +320,7 @@ FROM {args['project']}.{args['schema']}.{df_name} WHERE 1=1
 
     def plot_table(self, **params):
         from bokeh.models.widgets import DataTable, TableColumn
-        df, metrics = self._handle_source(**params)
+        df, metrics = self._handle_data(**params)
 
         columns = list()
         for col in df.columns.to_list():
@@ -311,7 +338,7 @@ FROM {args['project']}.{args['schema']}.{df_name} WHERE 1=1
 
     def plot_shots(self, **params):
         try:
-            df, metrics = self._handle_source(**params)
+            df, metrics = self._handle_data(**params)
             df['made'] = df['made'].astype('str')
             source = ColumnDataSource(df)
             p2 = figure(width=470, height=460,
@@ -410,3 +437,17 @@ FROM {args['project']}.{args['schema']}.{df_name} WHERE 1=1
                    line_color=self.f_color, line_width=line_width)
 
         return figure
+
+    def check_plot_cache(self, settings, url):
+        if settings['plot_caching']:
+            if settings['plot_cache_storage'] == 'local':
+                import os.path
+                return os.path.exists(settings['plot_local_cache'] + '/' + url + '.html')
+            elif settings['plot_cache_storage'] == 'gcpbucket':
+                path = f"{settings['plot_gcpbucket_path']}{url}.html"
+                blob = bucket.blob(path)
+                return blob.exists()
+            else:
+                return False
+        else:
+            return False

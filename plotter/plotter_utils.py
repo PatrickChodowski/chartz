@@ -35,7 +35,7 @@ def handle_configs():
 
 def create_settings():
     settings_example = """
-max_metrics: -1
+
 bg_color: '#4d4d4d'
 filters_bg_color: '#007fff'
 f_color: '#7FFFD4'
@@ -211,6 +211,7 @@ def setup_env(force_recreate=True):
     files = ['settings.yaml', 'filters.yaml', 'data_sources.yaml']
     if force_recreate:
         os.makedirs(dir_plotter)
+        os.makedirs(f'{dir_plotter}/views')
         for file in files:
             f_name = file.replace('.yaml', '')
             txt = function_dict[f_name]()
@@ -219,6 +220,8 @@ def setup_env(force_recreate=True):
     else:
         if not os.path.exists(dir_plotter):
             os.makedirs(dir_plotter)
+        if not os.path.exists(f'{dir_plotter}/views'):
+            os.makedirs(f'{dir_plotter}/views')
         for file in files:
             if not os.path.exists(f"{dir_plotter}/{file}"):
                 f_name = file.replace('.yaml', '')

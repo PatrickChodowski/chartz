@@ -142,6 +142,17 @@ label {
 #add_plot {
     width: 100%;
 }
+
+#save_view {
+    width: 48%;
+    font-size: 12px;
+}
+#list_view {
+    width: 48%;
+    font-size: 12px;
+}
+
+
 #open_filters {
     width: 100%;
 }
@@ -226,4 +237,3 @@ label {
     overflow-y: auto;
     overflow-x: hidden;
 }
-

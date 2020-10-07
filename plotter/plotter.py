@@ -103,3 +103,32 @@ def plot(type):
             #     file_blob.upload_from_filename(f'/tmp/{url}.html')
         return html_file
 
+
+@plotter.route('/save_view', methods=['POST'])
+def save_view():
+    import json
+    data = request.data
+    data_dict = json.loads(data.decode())
+    view_name = data_dict['view_name']
+    query_log = data_dict['query_log']
+    with open(f'./plotter_configs/views/{view_name}.json', 'w') as fp:
+        json.dump(query_log, fp)
+    return '200'
+
+@plotter.route('/list_views', methods=['POST'])
+def list_views():
+    import glob
+    view_list = glob.glob('./plotter_configs/views/*.json')
+    views_cleaned = [v.replace('./plotter_configs/views/', '').replace('.json','') for v in view_list]
+    views = ';'.join(views_cleaned)
+    return views, '200'
+
+@plotter.route('/load_view', methods=['POST'])
+def load_view():
+    import json
+    data = request.data
+    data_dict = json.loads(data.decode())
+    view_name = data_dict['view_name']
+    with open(f'./plotter_configs/views/{view_name}.json', 'r') as fp:
+        query_log = json.load(fp)
+    return query_log, '200'

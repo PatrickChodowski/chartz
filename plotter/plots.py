@@ -4,8 +4,6 @@ from bokeh.plotting import figure
 from bokeh.transform import factor_cmap
 
 # todo: kto jest w jakim percentylu
-# todo: view saving 0o
-
 # todo: handle operators -- czy moze wszystkie filtry jako tekst xd
 # todo: improve styling of forms
 # todo: (maybe last step ever- cleanup script.js and styles.css script) reorgenize in some logical order
@@ -21,14 +19,14 @@ class Plots:
         self.source = source
         self.data_sources = data_sources
 
-        self.df = None
         self.title_text = None
         self.con = None
 
     def _handle_source(self, **params):
         args = self.source
         all_params = {**args, **params}
-        self._data_bigquery(**all_params)
+        df, metrics = self._data_bigquery(**all_params)
+        return df, metrics
 
     def check_plot_cache(self, settings, url):
         if settings['plot_caching']:
@@ -55,13 +53,13 @@ class Plots:
         possible_calcs = self.data_sources[args['source']]['calculations']
         calcs_dict = dict((key, d[key]) for d in possible_calcs for key in d)
         calcs = list(calcs_dict.keys())
-        self.metrics = args['metrics'].split(';')
+        metrics = args['metrics'].split(';')
         df_name = self.data_sources[args['source']]['table']
 
         req_fields = self.data_sources[args['source']]['req_fields']
         if req_fields is not None:
             # remove from req fields if given fields is already in dimensions or metrics:
-            req_fields2 = [rq for rq in req_fields if (rq not in self.metrics) & (rq != args['dimensions'])]
+            req_fields2 = [rq for rq in req_fields if (rq not in metrics) & (rq != args['dimensions'])]
             rqf_txt = ','.join(req_fields2) + ','
         else:
             rqf_txt = ''
@@ -86,7 +84,7 @@ class Plots:
             cm_txt = ', '
 
         colqs = list()
-        for nc in self.metrics:
+        for nc in metrics:
             if nc not in calcs:
                 colqs.append(f"{args['aggr_type']}{prtn_txt_1}{nc}{prtn_txt_2} AS {nc}")
             else:
@@ -111,12 +109,13 @@ FROM {args['project']}.{args['schema']}.{df_name} WHERE 1=1
         if (args['having'] != '') & (gb_txt != ''):
             sql += f" HAVING {args['having']} "
 
-        obl_txt = f" ORDER BY {self.metrics[0]} DESC LIMIT {args['show_top_n']} "
+        obl_txt = f" ORDER BY {metrics[0]} DESC LIMIT {args['show_top_n']} "
         sql += obl_txt
         print(sql)
-        self.df = self.client.query(query=sql).to_dataframe()
-        self.df = self.df.round(3)
-        if self.df.shape[0] == 0:
+        df = self.client.query(query=sql).to_dataframe()
+        df = df.round(3)
+        return df, metrics
+        if df.shape[0] == 0:
             raise ValueError(f"""Value error: Empty dataset. Please double check query: {sql}""")
 
     def plot_box(self, **params):
@@ -124,18 +123,18 @@ FROM {args['project']}.{args['schema']}.{df_name} WHERE 1=1
         from statistics import median
         import numpy as np
 
-        self._handle_source(**params)
-        metric = self.metrics[0]
+        df, metrics = self._handle_source(**params)
+        metric = metrics[0]
 
-        self.df[metric] = np.nan_to_num(self.df[metric])
-        up_limit = int(round(math.ceil(max(self.df[metric])) + median(self.df[metric].values) * 0.1))
-        down_limit = int(round(math.ceil(min(self.df[metric])) - median(self.df[metric].values) * 0.1))
+        df[metric] = np.nan_to_num(df[metric])
+        up_limit = int(round(math.ceil(max(df[metric])) + median(df[metric].values) * 0.1))
+        down_limit = int(round(math.ceil(min(df[metric])) - median(df[metric].values) * 0.1))
 
         if up_limit == down_limit:
             down_limit = down_limit - 1
 
         try:
-            groups = self.df.groupby(params['dimensions'])
+            groups = df.groupby(params['dimensions'])
 
             q1 = groups[metric].quantile(q=0.25).to_frame()
             q2 = groups[metric].quantile(q=0.5).to_frame()
@@ -181,16 +180,16 @@ FROM {args['project']}.{args['schema']}.{df_name} WHERE 1=1
         import math
         from statistics import median
         import numpy as np
-        self._handle_source(**params)
+        df, metrics = self._handle_source(**params)
 
         try:
-            self.df.sort_values(params['dimensions'], inplace=True, ascending=True)
-            self.df[params['dimensions']] = self.df[params['dimensions']].astype('str')
-            source = ColumnDataSource(self.df)
-            metric = self.metrics[0]
+            df.sort_values(params['dimensions'], inplace=True, ascending=True)
+            df[params['dimensions']] = df[params['dimensions']].astype('str')
+            source = ColumnDataSource(df)
+            metric = metrics[0]
 
-            self.df[metric] = np.nan_to_num(self.df[metric])
-            up_limit = int(round(math.ceil(max(self.df[metric])) + median(self.df[metric].values) * 0.3))
+            df[metric] = np.nan_to_num(df[metric])
+            up_limit = int(round(math.ceil(max(df[metric])) + median(df[metric].values) * 0.3))
             p2 = figure(x_range=source.data[params['dimensions']], y_range=[0, up_limit],
                         plot_height=self.plot_height, plot_width=self.plot_width)
             p2.line(y=metric, x=params['dimensions'], source=source, line_color=self.f_color)
@@ -207,10 +206,10 @@ FROM {args['project']}.{args['schema']}.{df_name} WHERE 1=1
         import math
         from statistics import median
         try:
-            self._handle_source(**params)
-            source_aggr = ColumnDataSource(self.df)
-            metric = self.metrics[0]
-            up_limit = int(round(math.ceil(max(self.df[metric])) + median(self.df[metric].values) * 0.1))
+            df, metrics = self._handle_source(**params)
+            source_aggr = ColumnDataSource(df)
+            metric = metrics[0]
+            up_limit = int(round(math.ceil(max(df[metric])) + median(df[metric].values) * 0.1))
             df_aggr = source_aggr.data[params['dimensions']]
         except ValueError as e:
             return str(e)
@@ -221,7 +220,7 @@ FROM {args['project']}.{args['schema']}.{df_name} WHERE 1=1
                 return str(e)
 
         try:
-            if self.df[params['dimensions']].nunique() != self.df.shape[0]:
+            if df[params['dimensions']].nunique() != df.shape[0]:
                 raise ValueError('Data is not aggregated. Please select aggregation type')
 
             p2 = figure(x_range=df_aggr,
@@ -242,14 +241,14 @@ FROM {args['project']}.{args['schema']}.{df_name} WHERE 1=1
         from statistics import median
 
         try:
-            self._handle_source(**params)
-            metric1 = self.metrics[0]
-            metric2 = self.metrics[1]
-            source_aggr = ColumnDataSource(self.df)
-            up_limit1 = int(round(math.ceil(max(self.df[metric1])) + median(self.df[metric1].values) * 0.12))
-            up_limit2 = int(round(math.ceil(max(self.df[metric2])) + median(self.df[metric2].values) * 0.12))
-            down_limit1 = int(round(math.ceil(min(self.df[metric1])) - median(self.df[metric1].values) * 0.12))
-            down_limit2 = int(round(math.ceil(min(self.df[metric2])) - median(self.df[metric2].values) * 0.12))
+            df, metrics = self._handle_source(**params)
+            metric1 = metrics[0]
+            metric2 = metrics[1]
+            source_aggr = ColumnDataSource(df)
+            up_limit1 = int(round(math.ceil(max(df[metric1])) + median(df[metric1].values) * 0.12))
+            up_limit2 = int(round(math.ceil(max(df[metric2])) + median(df[metric2].values) * 0.12))
+            down_limit1 = int(round(math.ceil(min(df[metric1])) - median(df[metric1].values) * 0.12))
+            down_limit2 = int(round(math.ceil(min(df[metric2])) - median(df[metric2].values) * 0.12))
 
             if down_limit1 == up_limit1:
                 down_limit1 = down_limit1 - 1
@@ -294,12 +293,12 @@ FROM {args['project']}.{args['schema']}.{df_name} WHERE 1=1
 
     def plot_table(self, **params):
         from bokeh.models.widgets import DataTable, TableColumn
-        self._handle_source(**params)
+        df, metrics = self._handle_source(**params)
 
         columns = list()
-        for col in self.df.columns.to_list():
+        for col in df.columns.to_list():
             columns.append(TableColumn(field=col, title=col))
-        source = ColumnDataSource(self.df)
+        source = ColumnDataSource(df)
         p2 = DataTable(columns=columns,
                        source=source,
                        fit_columns=True,
@@ -312,9 +311,9 @@ FROM {args['project']}.{args['schema']}.{df_name} WHERE 1=1
 
     def plot_shots(self, **params):
         try:
-            self._handle_source(**params)
-            self.df['made'] = self.df['made'].astype('str')
-            source = ColumnDataSource(self.df)
+            df, metrics = self._handle_source(**params)
+            df['made'] = df['made'].astype('str')
+            source = ColumnDataSource(df)
             p2 = figure(width=470, height=460,
                         x_range=[-250, 250],
                         y_range=[422.5, -47.5],

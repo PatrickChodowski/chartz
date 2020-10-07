@@ -5,6 +5,7 @@ $("document").ready(function(){
     // global variables
     f_vars = {};
     query_logger = {};
+    query_logger_list = [];
     var metrics_choices = new Choices('#metrics',
     {   'maxItemCount': -1,
         'itemSelectText': '',
@@ -319,14 +320,14 @@ $("document").ready(function(){
     }
 
     function adding_plot(){
+        document.body.style.cursor = 'wait';
+        var plot_info = {};
         var q_args = '';
-        console.log(f_vars['metrics']);
         f_vars['having'] = document.getElementById('having_metrics').value;
 
         if (f_vars['metrics'] === ''){
             alert('Please pick at least one metric');
-        } //else if (f_vars['dimensions'] != '' & f_vars['aggr_type'] == '') {
-        //   alert('If you pick a dimension, you also need nonempty aggregation type'); }
+        }
           else {
             for (const [key, value] of Object.entries(f_vars)) {
                 if(['plot_type','fixed_filters'].indexOf(key) < 0){
@@ -334,19 +335,28 @@ $("document").ready(function(){
                 }
             };
             var plot_id = makeid(5);
+            plot_info['plot_id'] = plot_id;
             var url_plot = `plot/${f_vars['plot_type']}?`+q_args+f_vars['fixed_filters'];
-
+            plot_info['url_plot'] = url_plot;
             //check if given plot doesnt exist already:
-            if (Object.values(query_logger).indexOf(url_plot) >= 0){
+            if (Object.values(query_logger_list).indexOf(url_plot) >= 0){
+                document.body.style.cursor = 'default';
                 alert("Given plot already exists");
             } else {
-               query_logger[plot_id] = url_plot;
                var plot_title = build_title();
-               $('body').css('cursor','wait');
-               jQuery.post(url_plot, function(data){
-               $('body').css('cursor','default');
-                $(`<div class="col-md-5 plot_frame" id="${plot_id}"><div class = "plot_menu"><a class="plot_title">${plot_title}</a><button class="rm_plot" id="bpr_${plot_id}"> X </button><a class="button_link" href="${url_plot}" target="_blank">O</a> </div> ${data} </div>`).appendTo('#dash_grid');
-              });
+               plot_info['plot_title'] = plot_title;
+               jQuery.post(url_plot)
+                 .done(function( data ) {
+                  $(`<div class="col-md-5 plot_frame" id="${plot_id}"><div class = "plot_menu"><a class="plot_title">${plot_title}</a><button class="rm_plot" id="bpr_${plot_id}"> X </button><a class="button_link" href="${url_plot}" target="_blank">O</a> </div> ${data} </div>`).appendTo('#dash_grid');
+                  query_logger[plot_id] = plot_info;
+                  query_logger_list[plot_id] = url_plot;
+                })
+                .fail(function() {
+                    alert('This query wont work');
+                })
+                 .always(function() {
+                   document.body.style.cursor = 'default';
+                });
             };
         };
     };
@@ -363,6 +373,7 @@ $("document").ready(function(){
         var plot_id = button_id.replace('bpr_','');
         $('#'+plot_id).remove();
         delete query_logger[plot_id];
+        delete query_logger_list[plot_id];
         }
     );
 
@@ -381,6 +392,66 @@ $("document").ready(function(){
       if (event.target == modal) {
         modal.style.display = "none";
       }
+    };
+
+    // save view function
+    function save_view(){
+        var v_name = prompt("Please enter the view name", "view name...");
+        axios.post(`/save_view`, data={query_log: query_logger, view_name: v_name})
+        .then((response) => {
+            console.log('view saved');
+        }, (error) => {
+          console.log(error);
+        });
+    };
+    var save_view_btn = document.getElementById('save_view');
+    save_view_btn.addEventListener('click', save_view);
+
+    function list_views(){
+        axios.post(`/list_views`)
+        .then((response) => {
+            document.getElementById('view_select_div').style.display = 'block';
+            var view_select = document.getElementById('view_select');
+            var view_options =  response.data.split(';');
+            view_options.splice(0, 0, "");
+            add_options(view_select, view_options);
+        }, (error) => {
+          console.log(error);
+        });
+    };
+    var list_view_btn = document.getElementById('list_view');
+    list_view_btn.addEventListener('click', list_views);
+
+    function load_view(){
+         var v_name = document.getElementById('view_select').value;
+         document.getElementById('view_select_div').style.display = 'none';
+         axios.post(`/load_view`, data={view_name: v_name})
+        .then((response) => {
+            var query_log = response.data;
+            //for each plot_info in query_log run load_from_logger function
+            for (const [key, value] of Object.entries(query_log)) {
+                load_from_logger(value);
+            };
+        }, (error) => {
+          console.log(error);
+        });
+    };
+
+    var load_view_btn = document.getElementById('load_view');
+    load_view_btn.addEventListener('click', load_view);
+
+    function load_from_logger(x){
+        console.log(x);
+        var plot_info = {};
+        plot_info['plot_id'] = x['plot_id'];
+        plot_info['plot_title'] = x['plot_title'];
+        plot_info['url_plot'] = x['url_plot'];
+        jQuery.post(x['url_plot'])
+           .done(function( data ) {
+            $(`<div class="col-md-5 plot_frame" id="${x['plot_id']}"><div class = "plot_menu"><a class="plot_title">${x['plot_title']}</a><button class="rm_plot" id="bpr_${x['plot_id']}"> X </button><a class="button_link" href="${x['url_plot']}" target="_blank">O</a> </div> ${data} </div>`).appendTo('#dash_grid');
+            query_logger[x['plot_id']] = plot_info;
+            query_logger_list[x['plot_id']] = x['url_plot'];
+        });
     };
 
 });

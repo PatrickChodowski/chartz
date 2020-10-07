@@ -32,12 +32,12 @@ class Plots:
     def _handle_connection(self, **params):
         if self.client is None:
             try:
-                assert self.source['name'] in ['bigquery', 'postgresql']
+                assert self.source['source'] in ['bigquery', 'postgresql']
                 con_dict = {
                     'bigquery': self._connect_bigquery,
                     'postgresql': self._connect_postgresql
                 }
-                con_dict[self.source['name']](**params)
+                con_dict[self.source['source']](**params)
             except AssertionError:
                 return 'Make sure that active source in settings is one of [bigquery. postgresql]'
         else:
@@ -48,7 +48,7 @@ class Plots:
         all_params = {**args, **params}
         self._handle_connection(**params)
         sql, metrics = self._make_query(**all_params)
-        df = self.con_q[self.source['name']](sql)
+        df = self.con_q[self.source['source']](sql)
         return df, metrics
 
     def _connect_bigquery(self):

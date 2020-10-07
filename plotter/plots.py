@@ -3,12 +3,13 @@ from bokeh.models import ColumnDataSource, Title
 from bokeh.plotting import figure
 from bokeh.transform import factor_cmap
 
-# todo: postgres handler
+
 # todo: dokumentacja + porzadne readme
 
 # todo: kto jest w jakim percentylu
 # todo: handle operators -- czy moze wszystkie filtry jako tekst xd
 # todo: improve styling of forms
+# todo: handle different plot sizes
 # todo: (maybe last step ever- cleanup script.js and styles.css script) reorgenize in some logical order
 
 

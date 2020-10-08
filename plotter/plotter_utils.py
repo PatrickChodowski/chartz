@@ -15,6 +15,12 @@ def handle_configs(lib_path):
 
         main_filters = read_config(f'{lib_path}plotter_static/main_filters.yaml')
         source = settings['data_source']
+        main_filters['data_source']['options'] = list()
+        for k in data_sources.keys():
+            d = dict()
+            d['value'] = k
+            d['name'] = k
+            main_filters['data_source']['options'].append(d)
 
         act_check = [dsd['active'] for dsd in source]
         which_active = [i for i, x in enumerate(act_check) if x][0]
@@ -70,74 +76,6 @@ data_source:
 
 def create_filters():
     filters_example = """
-main_filters:
-  data_source:
-    value: 'ds'
-    name: 'Data Source'
-    type: 'select'
-    options:
-      - value: 'unique_ds_name'
-        name: 'My Data'
-
-  plot_type:
-    value: 'plot_type'
-    name: 'Plot Type'
-    type: 'select'
-    options:
-      - value: 'bar'
-        name: 'Bar'
-      - value: 'table'
-        name: 'Table'
-  metrics:
-    value: 'metrics'
-    name: 'Metrics'
-    type: 'choices'
-    options:
-      - name: ''
-        value: ''
-  dimensions:
-    value: 'dimensions'
-    name: 'Dimensions'
-    type: 'select'
-    options:
-      - name: ''
-        value: ''
-  aggr_type:
-    value: 'aggr_type'
-    name: 'Aggregates'
-    type: 'select'
-    options:
-      - name: ''
-        value: ''
-      - name: 'Mean'
-        value: 'avg'
-      - name: 'Sum'
-        value: 'sum'
-      - name: 'Count'
-        value: 'count'
-  show_top_n:
-    value: 'show_top_n'
-    name: 'SHOW TOP N'
-    type: 'number'
-    options:
-       min: 1
-       max: 500
-       default: 450
-
-add_filters:
-  name: 'Additional filters'
-  value: 'dim_filters'
-  type: 'select'
-  options:
-    - name: ''
-      value: ''
-    - name: 'Transaction Date'
-      value: 'transaction_date'
-    - name: 'Email'
-      value: 'customer_email'
-    - name: 'Product Name'
-      value: 'product_name'
-
 dim_filters:
   transaction_date:
     name: 'Transaction Date'

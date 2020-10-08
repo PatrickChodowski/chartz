@@ -23,7 +23,7 @@
 
              <button id="filters_close" type="button" class="btn btn-primary" >X</button>
 
-            {% for f_key, value in filters['main_filters'].items() %}
+            {% for f_key, value in filters.items() %}
                 {% if value['type'] == 'radio' %}
                     {% with id=value['value'], options=value['options'], cls='main_filter' %}
                         {% include "radio_input.html" %}

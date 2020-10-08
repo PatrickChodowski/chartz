@@ -371,6 +371,7 @@ $("document").ready(function(){
         f_vars['having'] = document.getElementById('having_metrics').value;
 
         if (f_vars['metrics'] === ''){
+            document.body.style.cursor = 'default';
             alert('Please pick at least one metric');
         }
           else {

@@ -7,8 +7,9 @@ from plotter.plotter_utils import handle_configs, get_paths
 js_resources = INLINE.render_js()
 css_resources = INLINE.render_css()
 
-setup = handle_configs()
 resources_path = get_paths()
+setup = handle_configs(resources_path)
+
 try:
     setup['settings']['plot_height']
 except KeyError:
@@ -37,7 +38,7 @@ plot_type_dict = {'bar':    plots.plot_bar,
 @plotter.route('/dash', methods=['POST', 'GET'])
 def dash():
     return render_template('dash.html',
-                             filters=setup['filters'])
+                           filters=setup['main_filters'])
 
 @plotter.route('/get_setup/<what>', methods=['POST'])
 def get_setup(what):

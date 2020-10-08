@@ -6,12 +6,14 @@ def read_config(path):
 
 
 
-def handle_configs():
+def handle_configs(lib_path):
     try:
         config_path = './plotter_configs/'
         filters = read_config(f'{config_path}filters.yaml')
         settings = read_config(f'{config_path}settings.yaml')
         data_sources = read_config(f'{config_path}data_sources.yaml')
+
+        main_filters = read_config(f'{lib_path}/main_filters.yaml')
         source = settings['data_source']
 
         act_check = [dsd['active'] for dsd in source]
@@ -25,6 +27,7 @@ def handle_configs():
         setup['filters'] = filters
         setup['add_filters'] = [df['value'] for df in filters['add_filters']['options']]
         setup['data_sources'] = data_sources
+        setup['main_filters'] = main_filters
         return setup
     except AssertionError:
         if type(which_active) != int:

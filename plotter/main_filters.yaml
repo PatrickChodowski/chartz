@@ -1,0 +1,50 @@
+main_filters:
+  data_source:
+    value: 'ds'
+    name: 'Data Source'
+    type: 'select'
+    options:
+      - value: ''
+        name: ''
+  plot_type:
+    value: 'plot_type'
+    name: 'Plot Type'
+    type: 'select'
+    options:
+      - value: ''
+        name: ''
+  metrics:
+    value: 'metrics'
+    name: 'Metrics'
+    type: 'choices'
+    options:
+      - name: ''
+        value: ''
+  dimensions:
+    value: 'dimensions'
+    name: 'Dimensions'
+    type: 'select'
+    options:
+      - name: ''
+        value: ''
+  aggr_type:
+    value: 'aggr_type'
+    name: 'Aggregates'
+    type: 'select'
+    options:
+      - name: ''
+        value: ''
+      - name: 'Mean'
+        value: 'avg'
+      - name: 'Sum'
+        value: 'sum'
+      - name: 'Count'
+        value: 'count'
+  show_top_n:
+    value: 'show_top_n'
+    name: 'SHOW TOP N'
+    type: 'number'
+    options:
+       min: 1
+       max: 500
+       default: 450

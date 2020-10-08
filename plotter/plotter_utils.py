@@ -13,7 +13,7 @@ def handle_configs(lib_path):
         settings = read_config(f'{config_path}settings.yaml')
         data_sources = read_config(f'{config_path}data_sources.yaml')
 
-        main_filters = read_config(f'{lib_path}/main_filters.yaml')
+        main_filters = read_config(f'{lib_path}main_filters.yaml')
         source = settings['data_source']
 
         act_check = [dsd['active'] for dsd in source]

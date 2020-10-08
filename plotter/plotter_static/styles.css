@@ -8,6 +8,7 @@
 
 #dash_content{
     background-color: var(--bg-color);
+    width: 100%;
 }
 
 body {
@@ -15,7 +16,7 @@ body {
 }
 
 #dash_grid {
-    background-color: var(--bg-color);
+    background-color: var(--bg-color) !important;
     padding-left: 20px;
 }
 

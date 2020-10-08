@@ -1,6 +1,19 @@
 
 $("document").ready(function(){
 
+    // read windows side so you know how many plots you can put there
+    width = (window.innerWidth > 0) ? window.innerWidth : screen.width;
+    var dash_grid = document.getElementById('dash_grid');
+    dash_grid.style.width = width - 200;
+
+    window.addEventListener("resize", function(event) {
+        var dash_grid = document.getElementById('dash_grid');
+        dash_grid.style.width = document.body.clientWidth - 200;
+    });
+
+
+
+
     get_setup(what='settings');
     // global variables
     f_vars = {};
@@ -114,15 +127,17 @@ $("document").ready(function(){
 
     function close_filter() {
         document.getElementById("filters_grid").style.display = "none";
-        //document.getElementById("dash_grid").style.marginLeft= "0";
         document.getElementById("open_menu").style.display = "block";
-    }
+        document.getElementById("dash_content").style.paddingLeft = "20px";
+        document.getElementById("dash_content").style.paddingTop = "20px";
+     };
 
     function open_filter() {
         document.getElementById("filters_grid").style.display = "block";
-        //document.getElementById("dash_grid").style.marginLeft= "180";
         document.getElementById("open_menu").style.display = "none";
-    }
+        document.getElementById("dash_content").style.paddingLeft = "0px";
+        document.getElementById("dash_content").style.paddingTop = "0px";
+    };
 
     var filters_close_btn = document.getElementById("filters_close");
     filters_close_btn.addEventListener('click', close_filter);
@@ -377,7 +392,7 @@ $("document").ready(function(){
                plot_info['plot_title'] = plot_title;
                jQuery.post(url_plot)
                  .done(function( data ) {
-                  $(`<div class="col-md-5 plot_frame" id="${plot_id}"><div class = "plot_menu"><a class="plot_title">${plot_title}</a><button class="rm_plot" id="bpr_${plot_id}"> X </button><a class="button_link" href="${url_plot}" target="_blank">O</a> </div> ${data} </div>`).appendTo('#dash_grid');
+                  $(`<div class="col-xs-1 plot_frame" id="${plot_id}"><div class = "plot_menu"><a class="plot_title">${plot_title}</a><button class="rm_plot" id="bpr_${plot_id}"> X </button><a class="button_link" href="${url_plot}" target="_blank">O</a> </div> ${data} </div>`).appendTo('#dash_grid');
                   query_logger[plot_id] = plot_info;
                   query_logger_list[plot_id] = url_plot;
                 })
@@ -478,7 +493,7 @@ $("document").ready(function(){
         plot_info['url_plot'] = x['url_plot'];
         jQuery.post(x['url_plot'])
            .done(function( data ) {
-            $(`<div class="col-md-5 plot_frame" id="${x['plot_id']}"><div class = "plot_menu"><a class="plot_title">${x['plot_title']}</a><button class="rm_plot" id="bpr_${x['plot_id']}"> X </button><a class="button_link" href="${x['url_plot']}" target="_blank">O</a> </div> ${data} </div>`).appendTo('#dash_grid');
+            $(`<div class="col-xs-1 plot_frame" id="${x['plot_id']}"><div class = "plot_menu"><a class="plot_title">${x['plot_title']}</a><button class="rm_plot" id="bpr_${x['plot_id']}"> X </button><a class="button_link" href="${x['url_plot']}" target="_blank">O</a> </div> ${data} </div>`).appendTo('#dash_grid');
             query_logger[x['plot_id']] = plot_info;
             query_logger_list[x['plot_id']] = x['url_plot'];
         });

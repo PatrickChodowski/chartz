@@ -87,7 +87,7 @@
                       </div>
                       <div class="modal-body">
                           <div id="add_filters_window">
-                                 {% with id=filters['add_filters']['value'], options= filters['add_filters']['options'], name=filters['add_filters']['name'] %}
+                                 {% with id='dim_filters', options= [], name='Additional filters' %}
                                     {% include "select_input.html" %}
                                 {% endwith %}
                           <div id="add_filters_window_list">

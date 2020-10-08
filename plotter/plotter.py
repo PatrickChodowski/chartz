@@ -62,7 +62,7 @@ def get_setup(what):
         return filter_dict
     elif what == 'filter_info':
         args = request.args.to_dict()
-        filter_data = setup['filters']['dim_filters'][args['filter_name']]
+        filter_data = setup['dim_filters'][args['filter_name']]
         return filter_data
     else:
         return setup[what]

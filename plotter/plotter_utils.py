@@ -5,7 +5,6 @@ def read_config(path):
     return config
 
 
-
 def handle_configs(lib_path):
     try:
         config_path = './plotter_configs/'
@@ -26,12 +25,11 @@ def handle_configs(lib_path):
         which_active = [i for i, x in enumerate(act_check) if x][0]
         assert isinstance(which_active, int)
         source = source[which_active]
-
         setup = dict()
         setup['source'] = source
         setup['settings'] = settings
-        setup['filters'] = filters
-        setup['add_filters'] = [df['value'] for df in filters['add_filters']['options']]
+        setup['add_filters'] = list(filters['dim_filters'].keys())
+        setup['dim_filters'] = filters['dim_filters']
         setup['data_sources'] = data_sources
         setup['main_filters'] = main_filters
         return setup
@@ -59,7 +57,7 @@ data_source:
      schema: 'dash'
      sa_path: 'sa_file_path.json'
      active: True
-   
+
    - name: 'pgsql'
      source: 'postgresql'
      user: 'username'
@@ -128,6 +126,7 @@ unique_ds_name:
 """
     return ds_example
 
+
 def create_example_main():
     import os
     example_main_text = """
@@ -153,6 +152,7 @@ if __name__ == '__main__':
     if not os.path.exists("example_main.py"):
         with open(f"example_main.py", "a+") as f:
             f.write(example_main_text)
+
 
 def setup_env(force_recreate=True):
     import os
@@ -182,6 +182,7 @@ def setup_env(force_recreate=True):
                 with open(f"{dir_plotter}/{file}", "a+") as f:
                     f.write(txt)
     create_example_main()
+
 
 def get_paths():
     import importlib

@@ -16,7 +16,7 @@ setup(
                               'plotter_static/bootstrap/js/*.map']},
     install_requires=['flask', 'bokeh', 'google-cloud-bigquery', 'pandas', 'pyyaml', 'sqlalchemy'],
     # *strongly* suggested for sharing
-    version='0.4.0',
+    version='0.4.2',
     license='MIT',
     description='Flask module allowing to build dashboards for data defined in single yml files',
     long_description=open('README.rst').read(),

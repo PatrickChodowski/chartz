@@ -7,7 +7,6 @@ from bokeh.transform import factor_cmap
 # todo: fix cache plots
 # todo: dokumentacja + porzadne readme
 # todo: iterate by -> plot per category
-# todo: move main filters and add filters definiton to package insides
 
 # todo: kto jest w jakim percentylu
 # todo: handle operators -- czy moze wszystkie filtry jako tekst xd

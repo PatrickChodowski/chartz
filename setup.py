@@ -12,7 +12,8 @@ setup(
                               'plotter_static/bootstrap/css/*.css',
                               'plotter_static/bootstrap/css/*.map',
                               'plotter_static/bootstrap/js/*.js',
-                              'plotter_static/bootstrap/js/*.map']},
+                              'plotter_static/bootstrap/js/*.map'
+                              'main_filters.yaml']},
     install_requires=['flask', 'bokeh', 'google-cloud-bigquery', 'pandas', 'pyyaml', 'sqlalchemy'],
     # *strongly* suggested for sharing
     version='0.4.0',

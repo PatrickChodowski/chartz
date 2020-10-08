@@ -144,8 +144,7 @@ $("document").ready(function(){
             add_options(dimensions_select, dimensions);
 
             // feeding choices.js metrics
-            metrics_choices.clearChoices();
-            metrics_choices.clearInput();
+            metrics_choices.clearStore();
 
             if(typeof calculations !== "undefined"){
                 var calcs = calculations.map(function(x){ return Object.keys(x)[0]; });
@@ -161,7 +160,7 @@ $("document").ready(function(){
             get_setup(what='filters', data_source=table);
 
         } catch (error) {
-            alert('Please select correct data source');
+            alert(error);
         };
     };
 
@@ -305,7 +304,7 @@ $("document").ready(function(){
     function build_title(){
         var f_texts = [];
         for (const [key, value] of Object.entries(f_vars)) {
-           if(['show_top_n', 'aggr_type', 'dimensions', 'plot_type', 'ds', 'metrics', 'source', 'fixed_filters'].indexOf(key) < 0){
+           if(['show_top_n', 'aggr_type', 'dimensions', 'plot_type', 'ds', 'metrics', 'source', 'fixed_filters', 'having'].indexOf(key) < 0){
              var f_txt = `${key}: ${value}`;
              f_texts.push(f_txt);
            };
@@ -314,8 +313,21 @@ $("document").ready(function(){
             f_texts.push(f_vars['fixed_filters'].replaceAll('=',': ').replaceAll('&', ' '))
         };
 
+        if(f_vars['having'] == ''){
+            var hv_txt = '';
+        } else {
+            var hv_txt = `HAVING: ${f_vars['having'] }`;
+        };
+
+        if(f_vars['dimensions'] == ''){
+            var dim_txt = '';
+        } else {
+            var dim_txt = `BY ${f_vars['dimensions'] }`;
+        };
+
+
         var f_text = f_texts.join(" ");
-        var plot_title = `${f_vars['aggr_type']} ${f_vars['metrics']} BY ${f_vars['dimensions']} ${f_text}`.toUpperCase();
+        var plot_title = `${f_vars['aggr_type']} ${f_vars['metrics']} ${dim_txt} ${hv_txt} ${f_text}`.toUpperCase();
         return plot_title
     }
 

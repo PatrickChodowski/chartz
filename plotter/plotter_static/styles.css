@@ -40,9 +40,12 @@ body {
     padding-top: 10px;
     padding-bottom: 10px;
     padding-left: 20px;
-
 }
 
+.rm_button {
+    width: 25px;
+    height: 25px;
+}
 
 
 .plot_frame {
@@ -61,7 +64,8 @@ body {
     margin-left: 0px;
     margin-bottom: 0px;
     padding-right: 10px;
-    float: right;
+    padding-left: 10px;
+    float: left;
     position: relative;
     z-index: 999;
     width: var(--plot-width);
@@ -200,6 +204,7 @@ label {
 .choices__input {
     padding-left: 0px !important;
     font-size: 12px !important;
+    min-width: 100px !important;
 }
 
 .choices__item {
@@ -230,10 +235,4 @@ label {
 .error_msg {
     color: red !important;
     font-size: 14px !important;
-}
-
-#add_filters_window_list {
-    max-height: 600px;
-    overflow-y: auto;
-    overflow-x: hidden;
 }

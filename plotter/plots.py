@@ -3,13 +3,17 @@ from bokeh.models import ColumnDataSource, Title
 from bokeh.plotting import figure
 from bokeh.transform import factor_cmap
 
+
+# todo: handle different plot sizes
+
 # todo: fix cache plots
 # todo: dokumentacja + porzadne readme
+# todo: iterate by -> plot per category
+# todo: move main filters and add filters definiton to package insides
 
 # todo: kto jest w jakim percentylu
 # todo: handle operators -- czy moze wszystkie filtry jako tekst xd
 # todo: improve styling of forms
-# todo: handle different plot sizes
 # todo: (maybe last step ever- cleanup script.js and styles.css script) reorgenize in some logical order
 
 

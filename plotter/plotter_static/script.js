@@ -112,6 +112,24 @@ $("document").ready(function(){
         add_options(filters_select, filters);
     };
 
+    function close_filter() {
+        document.getElementById("filters_grid").style.display = "none";
+        //document.getElementById("dash_grid").style.marginLeft= "0";
+        document.getElementById("open_menu").style.display = "block";
+    }
+
+    function open_filter() {
+        document.getElementById("filters_grid").style.display = "block";
+        //document.getElementById("dash_grid").style.marginLeft= "180";
+        document.getElementById("open_menu").style.display = "none";
+    }
+
+    var filters_close_btn = document.getElementById("filters_close");
+    filters_close_btn.addEventListener('click', close_filter);
+    var open_menu_btn = document.getElementById("open_menu");
+    open_menu_btn.addEventListener('click', open_filter);
+
+
     // handle info about data sources
     function handle_data_sources(x){
         try{

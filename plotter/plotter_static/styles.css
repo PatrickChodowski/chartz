@@ -16,6 +16,7 @@ body {
 
 #dash_grid {
     background-color: var(--bg-color);
+    padding-left: 20px;
 }
 
 
@@ -28,7 +29,17 @@ body {
     max-width: 180px;
     transition: 0.5s;
     background-color: var(--filters-bg-color);
+    transition: 0.5s;
 }
+
+#filters_grid .closebtn {
+  position: absolute;
+  top: 0;
+  right: 25px;
+  font-size: 36px;
+  margin-left: 50px;
+}
+
 
 .filter_value {
     max-width: 300px;
@@ -48,6 +59,7 @@ body {
     margin-right: 10px;
     top: 40%;
 }
+
 
 .plot_frame {
     border-radius: 5px;
@@ -236,4 +248,14 @@ label {
 .error_msg {
     color: red !important;
     font-size: 14px !important;
+}
+
+
+
+#open_menu {
+    display: none;
+    position: absolute;
+    z-index: 10000;
+    top: 20px;
+    right: 20px;
 }

@@ -21,6 +21,8 @@
     <div class="row" id="dash_content">
         <div class="col-md-2" id="filters_grid">
 
+             <button id="filters_close" type="button" class="btn btn-primary" >X</button>
+
             {% for f_key, value in filters['main_filters'].items() %}
                 {% if value['type'] == 'radio' %}
                     {% with id=value['value'], options=value['options'], cls='main_filter' %}
@@ -106,8 +108,7 @@
                   </div>
               </div>
     </div>
+        <button id="open_menu" type="button" class="btn btn-primary" >MENU</button>
     </div>
     </body>
-
-
 </html>

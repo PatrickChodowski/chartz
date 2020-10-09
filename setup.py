@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='chartz',
-    url='https://github.com/PatrickChodowski/plotter',
+    url='https://github.com/PatrickChodowski/chartz',
     author='Patrick Chodowski',
     author_email='chodowski.patrick@gmail.com',
     packages=['chartz'],
@@ -19,5 +19,5 @@ setup(
     version='0.4.8',
     license='MIT',
     description='Flask module allowing to build dashboards for data defined in single yml files',
-    long_description=open('README.rst').read(),
+    long_description=open('README.md').read(),
 )

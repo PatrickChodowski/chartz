@@ -7,7 +7,7 @@ def read_config(path):
 
 def handle_configs(lib_path):
     try:
-        config_path = './plotter_configs/'
+        config_path = './chartz_configs/'
         filters = read_config(f'{config_path}filters.yaml')
         settings = read_config(f'{config_path}settings.yaml')
         data_sources = read_config(f'{config_path}data_sources.yaml')

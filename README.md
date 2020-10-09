@@ -1,6 +1,5 @@
-===================
-ChartZ!
-===================
+
+# ChartZ!
 
 ### See everything.
 
@@ -12,4 +11,4 @@ Solution to our struggles is so obvious - just have all the charts visible at on
 
 Here, have a screenshot to get you excited (I am aware of the fact that UI still looks scuffed):
 
-![view to make you excited](https://github.com/PatrickChodowski/chartz/master/exciting_view.png "Exciting view")
+![view to make you excited](https://github.com/PatrickChodowski/chartz/blob/master/exciting_view.png "Exciting view")

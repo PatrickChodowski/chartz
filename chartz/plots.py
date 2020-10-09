@@ -442,12 +442,17 @@ FROM {args['project']}.{args['schema']}.{df_name} WHERE 1=1
 
         return figure
 
-    def _handle_local_cache(self, url):
+    def _check_local_cache(self, url):
         '''
-        :return:  True/False  if the plot is cached or not in the local directory
+        :return:  True/False  if the plot is cached and created within cache time
         '''
         import os.path
-        return os.path.exists(self.plot_caching['cache_path'] + '/' + url + '.html')
+        import datetime as dt
+        if os.path.exists(self.plot_caching['cache_path'] + '/' + url + '.html'):
+            time_created = dt.datetime.fromtimestamp(os.path.getctime(self.plot_caching['cache_path'] + '/' + url + '.html'))
+            return (dt.datetime.now() - time_created).total_seconds() <= self.plot_caching['cache_time']
+        else:
+            return False
 
     def _connect_gcp_bucket(self):
         '''
@@ -462,16 +467,21 @@ FROM {args['project']}.{args['schema']}.{df_name} WHERE 1=1
         )
         self.bucket = bucket_client.get_bucket(self.plot_caching['cache_bucket'])
 
-
-    def _handle_gcp_cache(self, url):
+    def _check_gcp_cache(self, url):
         '''
         :return: True/False if the plot is cached or not in the gcp bucket
         '''
+        import datetime as dt
         if self.bucket is None:
             self._connect_gcp_bucket()
         path = f"{self.plot_caching['cache_path']}{url}.html"
         blob = self.bucket.blob(path)
-        return blob.exists()
+
+        if blob.exists():
+            time_created = blob.time_created
+            return(dt.datetime.now() - time_created).total_seconds() <= self.plot_caching['cache_time']
+        else:
+            return False
 
     def check_plot_cache(self, url):
         '''
@@ -479,8 +489,8 @@ FROM {args['project']}.{args['schema']}.{df_name} WHERE 1=1
         If caching is switched off, then returns False and lets code make query, run query and create plot
         '''
         if self.plot_caching['active']:
-            cache_dict = {'local': self._handle_local_cache,
-                          'gcpbucket': self._handle_gcp_cache}
+            cache_dict = {'local': self._check_local_cache,
+                          'gcpbucket': self._check_gcp_cache}
             plot_exists =  cache_dict[self.plot_caching['cache_storage']](url)
             return plot_exists
         else:

@@ -142,7 +142,7 @@ $("document").ready(function(){
 
     // handle info about data sources
     function handle_data_sources(x){
-        //try{
+        try{
             let dimensions = x['dimensions'];
             let metrics = x['metrics'];
             let calculations = x['calculations'];
@@ -166,6 +166,7 @@ $("document").ready(function(){
             // add plots
             let plots_select = document.getElementById('plot_type');
             add_options(plots_select, plots);
+            f_vars['plot_type'] = plots[0];
 
             // add new filters
             let dimensions_select = document.getElementById('dimensions');
@@ -187,9 +188,9 @@ $("document").ready(function(){
             // filters
             let filters_select = document.getElementById('dim_filters');
             add_options(filters_select, dimensions);
-//        } catch (error) {
-//            alert(error);
-//        };
+        } catch (error) {
+            alert(error);
+        };
     };
 
     // create new option for select
@@ -430,6 +431,7 @@ $("document").ready(function(){
 
     // filters window modal code:
     var modal = document.getElementById("filters_window");
+    var view_select_div = document.getElementById("view_select_div");
     var btn = document.getElementById("open_filters");
     var span = document.getElementsByClassName("close")[0];
     btn.onclick = function() {
@@ -437,11 +439,16 @@ $("document").ready(function(){
     };
     span.onclick = function() {
       modal.style.display = "none";
+      view_select_div.style.display = "none";
     };
     window.onclick = function(event) {
       if (event.target == modal) {
-        modal.style.display = "none";
+            modal.style.display = "none";
       }
+      if (event.target == view_select_div) {
+            view_select_div.style.display = "none";
+      }
+
     };
 
     // save view function

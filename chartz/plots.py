@@ -4,8 +4,6 @@ from bokeh.plotting import figure
 from bokeh.transform import factor_cmap
 
 
-# todo: fix cache plots
-
 # todo: dokumentacja + porzadne readme
 # todo: iterate by -> plot per category
 # todo: kto jest w jakim percentylu/ percentyle ogolem

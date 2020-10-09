@@ -48,18 +48,6 @@ def get_data_sources():
     except KeyError as e:
         return str(e)
 
-
-@chartz.route('/get_filters', methods=['POST'])
-def get_filters():
-    args = request.args.to_dict()
-    filters = setup['add_filters']
-    dimensions = setup['data_sources'][args['data_source']]['dimensions']
-    filter_dict = dict()
-    for d in filters:
-        if d['value'] in dimensions:
-            filter_dict[d['value']] = d['name']
-    return filter_dict
-
 @chartz.route('/get_filter_info', methods=['POST'])
 def get_filter_info():
     args = request.args.to_dict()

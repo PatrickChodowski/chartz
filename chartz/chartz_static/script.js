@@ -142,7 +142,7 @@ $("document").ready(function(){
 
     // handle info about data sources
     function handle_data_sources(x){
-        try{
+        //try{
             let dimensions = x['dimensions'];
             let metrics = x['metrics'];
             let calculations = x['calculations'];
@@ -185,17 +185,11 @@ $("document").ready(function(){
             metrics_choices.setChoices(metrics_dict);
 
             // filters
-            axios.post(`/get_filters?data_source=${data_source}`)
-                .then((response) => {
-                    let filters = response['data']
-                    let filters_select = document.getElementById('dim_filters');
-                    add_options(filters_select, Object.keys(filters));
-            }, (error) => {
-              console.log(error);
-            });
-        } catch (error) {
-            alert(error);
-        };
+            let filters_select = document.getElementById('dim_filters');
+            add_options(filters_select, dimensions);
+//        } catch (error) {
+//            alert(error);
+//        };
     };
 
     // create new option for select

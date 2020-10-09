@@ -22,7 +22,7 @@ ChartZ! UI will get automatically updated with your settings and you are ready t
 
 Go ahead and save your plots as a view. You will be able to load it later from saved views so you will never have to click-out the same combination of plots EVER AGAIN WOW.
 
-![demo of load view](https://streamable.com/r4kaaf "Load views")
+![demo of load view]((https://github.com/PatrickChodowski/chartz/blob/master/load_view_demo.gif "Load views")
 
 
 ### Features

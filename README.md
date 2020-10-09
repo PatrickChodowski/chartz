@@ -3,6 +3,17 @@
 
 ### See everything.
 
+---
+
+#### To install:
+
+python -m pip install git+https://github.com/PatrickChodowski/chartz.git
+
+#### Add to requirements.txt:
+git+git://github.com/PatrickChodowski/chartz/@master#egg=chartz
+
+---
+
 Have you ever run exploratory data analysis before and wondered "Hmmm would be cool to view all the charts at the same time without scrolling or changing tab". 
 
 Well I had for sure and I have good news!  That's exactly why this package was created. ChartZ! is the remedy for all of us who are not able to memorize insights from the chart you have seen 5 seconds ago. 

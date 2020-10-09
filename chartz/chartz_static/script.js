@@ -11,10 +11,17 @@ $("document").ready(function(){
         dash_grid.style.width = document.body.clientWidth - 200;
     });
 
+        // getting yamls based on promises
+    function get_settings(){
+        axios.post(`/get_settings`)
+        .then((response) => {
+            handle_settings(response['data']);
+        }, (error) => {
+          console.log(error);
+        });
+    };
+    get_settings();
 
-
-
-    get_setup(what='settings');
     // global variables
     f_vars = {};
     query_logger = {};
@@ -26,11 +33,6 @@ $("document").ready(function(){
         'placeholderValue': ''
     });
 
-    // dictionary of functions to avoid if elses
-    setup_handler_dict = {'settings':     handle_settings,
-                          'filters':      handle_filters,
-                          'data_sources': handle_data_sources,
-                          'filter_info':  handle_filter_info};
 
     // handle filter_info - creating new filter
       function handle_filter_info(x){
@@ -118,13 +120,6 @@ $("document").ready(function(){
 
     };
 
-    // handle filters info
-    function handle_filters(x){
-        let filters_select = document.getElementById('dim_filters');
-        let filters = Object.keys(x);
-        add_options(filters_select, filters);
-    };
-
     function close_filter() {
         document.getElementById("filters_grid").style.display = "none";
         document.getElementById("open_menu").style.display = "block";
@@ -190,8 +185,14 @@ $("document").ready(function(){
             metrics_choices.setChoices(metrics_dict);
 
             // filters
-            get_setup(what='filters', data_source=table);
-
+            axios.post(`/get_filters?data_source=${data_source}`)
+                .then((response) => {
+                    let filters = response['data']
+                    let filters_select = document.getElementById('dim_filters');
+                    add_options(filters_select, Object.keys(filters));
+            }, (error) => {
+              console.log(error);
+            });
         } catch (error) {
             alert(error);
         };
@@ -216,26 +217,25 @@ $("document").ready(function(){
     };
 
 
-    // getting yamls based on promises
-    function get_setup(what, data_source='', filter_name=''){
-        axios.post(`/get_setup/${what}?data_source=${data_source}&filter_name=${filter_name}`)
-        .then((response) => {
-            setup_handler_dict[what](response['data']);
-        }, (error) => {
-          console.log(error);
-        });
-    };
-
    // catching ds_select value updates
     const ds_select = document.querySelector('#ds');
     let ds_value = ds_select.value;
     ds_select.addEventListener('change', (event) => {
           let ds_value = ds_select.value;
-          get_setup(what='data_sources', data_source = ds_value);
+          get_data_sources(ds_value);
     });
 
     // initial setup
-    get_setup(what='data_sources', data_source = ds_select.value);
+    function get_data_sources(data_source){
+        axios.post(`/get_data_sources?data_source=${data_source}`)
+        .then((response) => {
+            handle_data_sources(response['data']);
+        }, (error) => {
+          console.log(error);
+        });
+    };
+    get_data_sources(ds_select.value);
+
 
     // function for making unique plot id
     function makeid(length) {
@@ -307,9 +307,19 @@ $("document").ready(function(){
     var dim_filters = document.querySelector("#dim_filters");
     dim_filters.addEventListener('change', open_new_filter, false);
 
+
+    function get_filter_info(filter_name){
+      axios.post(`/get_filter_info?filter_name=${filter_name}`)
+        .then((response) => {
+            handle_filter_info(response['data']);
+        }, (error) => {
+          console.log(error);
+        });
+    };
+
     function open_new_filter(v){
        var v_value = v.target.value;
-       get_setup(what='filter_info', data_source='', filter_name=v_value);
+       get_filter_info(v_value);
     };
 
     // remove filter button logic:

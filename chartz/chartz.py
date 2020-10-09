@@ -1,8 +1,8 @@
 from flask import Blueprint, request, render_template
-from plotter.plots import Plots
+from chartz.plots import Plots
 from bokeh.embed import components
 from bokeh.resources import INLINE
-from plotter.plotter_utils import handle_configs, get_paths
+from chartz.utils import handle_configs, get_paths
 
 js_resources = INLINE.render_js()
 css_resources = INLINE.render_css()
@@ -13,7 +13,7 @@ setup = handle_configs(resources_path)
 try:
     setup['settings']['plot_height']
 except KeyError:
-    print('Have you created settings.yaml? Try running setup_env() frp, plotter.plotter_utils as a first step')
+    print('Have you created settings.yaml? Try running setup_env() from chartz.utils as a first step')
 
 plots = Plots(plot_height=setup['settings']['plot_height'],
               plot_width=setup['settings']['plot_width'],
@@ -23,10 +23,10 @@ plots = Plots(plot_height=setup['settings']['plot_height'],
               data_sources=setup['data_sources'],
               source=setup['source'])
 
-plotter = Blueprint('plotter',
+chartz = Blueprint('chartz',
                     __name__,
-                    template_folder=f'{resources_path}plotter_templates',
-                    static_folder=f'{resources_path}plotter_static')
+                    template_folder=f'{resources_path}chartz_templates',
+                    static_folder=f'{resources_path}chartz_static')
 
 plot_type_dict = {'bar':    plots.plot_bar,
                   'points': plots.plot_points,
@@ -35,39 +35,43 @@ plot_type_dict = {'bar':    plots.plot_bar,
                   'shot':   plots.plot_shots,
                   'table':  plots.plot_table}
 
-@plotter.route('/dash', methods=['POST', 'GET'])
+@chartz.route('/dash', methods=['POST', 'GET'])
 def dash():
-    return render_template('dash.html',
-                           filters=setup['main_filters'])
+    return render_template('dash.html', filters=setup['main_filters'])
 
-@plotter.route('/get_setup/<what>', methods=['POST'])
-def get_setup(what):
-    '''
-    settings, filters, data_sources, filter_info
-    '''
-    if what == 'data_sources':
-        try:
-            args = request.args.to_dict()
-            return setup[what][args['data_source']]
-        except KeyError as e:
-            return str(e)
-    elif what == 'filters':
-        args = request.args.to_dict()
-        filters = setup[what]['add_filters']['options']
-        dimensions = setup['data_sources'][args['data_source']]['dimensions']
-        filter_dict = dict()
-        for d in filters:
-            if d['value'] in dimensions:
-                filter_dict[d['value']] = d['name']
-        return filter_dict
-    elif what == 'filter_info':
-        args = request.args.to_dict()
-        filter_data = setup['dim_filters'][args['filter_name']]
-        return filter_data
-    else:
-        return setup[what]
 
-@plotter.route('/plot/<type>', methods=['POST', 'GET'])
+@chartz.route('/get_data_sources', methods=['POST'])
+def get_data_sources():
+    try:
+        args = request.args.to_dict()
+        return setup['data_sources'][args['data_source']]
+    except KeyError as e:
+        return str(e)
+
+
+@chartz.route('/get_filters', methods=['POST'])
+def get_filters():
+    args = request.args.to_dict()
+    filters = setup['add_filters']
+    dimensions = setup['data_sources'][args['data_source']]['dimensions']
+    filter_dict = dict()
+    for d in filters:
+        if d['value'] in dimensions:
+            filter_dict[d['value']] = d['name']
+    return filter_dict
+
+@chartz.route('/get_filter_info', methods=['POST'])
+def get_filter_info():
+    args = request.args.to_dict()
+    filter_data = setup['dim_filters'][args['filter_name']]
+    return filter_data
+
+@chartz.route('/get_settings', methods=['POST'])
+def get_settings():
+    return setup['settings']
+
+
+@chartz.route('/plot/<type>', methods=['POST', 'GET'])
 def plot(type):
     url = request.url.split('plot/')[1]
     if plots.check_plot_cache(setup['settings'], url):
@@ -105,31 +109,32 @@ def plot(type):
         return html_file
 
 
-@plotter.route('/save_view', methods=['POST'])
+@chartz.route('/save_view', methods=['POST'])
 def save_view():
     import json
     data = request.data
     data_dict = json.loads(data.decode())
     view_name = data_dict['view_name']
     query_log = data_dict['query_log']
-    with open(f'./plotter_configs/views/{view_name}.json', 'w') as fp:
+    with open(f'./chartz_configs/views/{view_name}.json', 'w') as fp:
         json.dump(query_log, fp)
     return '200'
 
-@plotter.route('/list_views', methods=['POST'])
+@chartz.route('/list_views', methods=['POST'])
 def list_views():
     import glob
-    view_list = glob.glob('./plotter_configs/views/*.json')
-    views_cleaned = [v.replace('./plotter_configs/views/', '').replace('.json','') for v in view_list]
+    view_list = glob.glob('./chartz_configs/views/*.json')
+    views_cleaned = [v.replace('./chartz_configs/views/', '').replace('.json','') for v in view_list]
     views = ';'.join(views_cleaned)
     return views, '200'
 
-@plotter.route('/load_view', methods=['POST'])
+@chartz.route('/load_view', methods=['POST'])
 def load_view():
     import json
     data = request.data
     data_dict = json.loads(data.decode())
     view_name = data_dict['view_name']
-    with open(f'./plotter_configs/views/{view_name}.json', 'r') as fp:
+    with open(f'./chartz_configs/views/{view_name}.json', 'r') as fp:
         query_log = json.load(fp)
     return query_log, '200'
+

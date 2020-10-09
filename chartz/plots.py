@@ -5,13 +5,15 @@ from bokeh.transform import factor_cmap
 
 
 # todo: fix cache plots
+
 # todo: dokumentacja + porzadne readme
 # todo: iterate by -> plot per category
-
-# todo: kto jest w jakim percentylu
+# todo: kto jest w jakim percentylu/ percentyle ogolem
+# todo: plot rozkladu
 # todo: handle operators -- czy moze wszystkie filtry jako tekst xd
 # todo: improve styling of forms
 # todo: (maybe last step ever- cleanup script.js and styles.css script) reorgenize in some logical order
+# todo: automate source creation - analyze table, get dimensions and metrics save it to yamls
 
 
 class Plots:

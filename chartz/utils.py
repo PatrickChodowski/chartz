@@ -28,8 +28,8 @@ def handle_configs(lib_path):
         setup = dict()
         setup['source'] = source
         setup['settings'] = settings
-        setup['add_filters'] = list(filters['dim_filters'].keys())
-        setup['dim_filters'] = filters['dim_filters']
+        setup['add_filters'] = list(filters.keys())
+        setup['dim_filters'] = filters
         setup['data_sources'] = data_sources
         setup['main_filters'] = main_filters
         return setup
@@ -48,7 +48,12 @@ filters_bg_color: '#007fff'
 f_color: '#7FFFD4'
 plot_height: '400px'
 plot_width: '470px'
+
 plot_caching: False
+cache_storage: 'local' # gcpbucket or local
+cache_time: 86400 # in seconds
+cache_bucket: 'bucketname' # works only if cache_storage is gcpbucket
+cache_path: './plotter_configs/cache'  # use just 'cache' for gcpbucket
 
 data_source:
    - name: 'gbq'
@@ -74,30 +79,29 @@ data_source:
 
 def create_filters():
     filters_example = """
-dim_filters:
-  transaction_date:
-    name: 'Transaction Date'
-    value: 'transaction_date'
-    operators:
-      - 'eq'
-      - 'lt'
-      - 'gt'
-    duplicable: True
-    type: 'text'
-  customer_email:
-    name: 'Email'
-    value: 'customer_email'
-    operators:
-      - 'eq'
-    duplicable: False
-    type: 'text'
-  product_name:
-    name: 'Product Name'
-    value: 'product_name'
-    operators:
-      - 'eq'
-    duplicable: False
-    type: 'text'      
+transaction_date:
+  name: 'Transaction Date'
+  value: 'transaction_date'
+  operators:
+    - 'eq'
+    - 'lt'
+    - 'gt'
+  duplicable: True
+  type: 'text'
+customer_email:
+  name: 'Email'
+  value: 'customer_email'
+  operators:
+    - 'eq'
+  duplicable: False
+  type: 'text'
+product_name:
+  name: 'Product Name'
+  value: 'product_name'
+  operators:
+    - 'eq'
+  duplicable: False
+  type: 'text'      
 
     """
     return filters_example
@@ -134,16 +138,16 @@ from flask import Flask
 import os
 
 SECRET_KEY = os.urandom(32)
-from plotter.plotter import plotter
+from chartz.chartz import chartz
 app = Flask(__name__)
 app.config['SECRET_KEY'] = SECRET_KEY
 app.config["FLASK_DEBUG"] = 0
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
-app.register_blueprint(plotter)
+app.register_blueprint(chartz)
 
 @app.route('/', methods=['POST','GET'])
 def index():
-    return 'hello! plotter will be on /dash!'
+    return 'hello! chartz will be on /dash!'
 
 
 if __name__ == '__main__':
@@ -165,6 +169,7 @@ def setup_env(force_recreate=True):
     if force_recreate:
         os.makedirs(dir_plotter)
         os.makedirs(f'{dir_plotter}/views')
+        os.makedirs(f'{dir_plotter}/cache')
         for file in files:
             f_name = file.replace('.yaml', '')
             txt = function_dict[f_name]()
@@ -175,6 +180,8 @@ def setup_env(force_recreate=True):
             os.makedirs(dir_plotter)
         if not os.path.exists(f'{dir_plotter}/views'):
             os.makedirs(f'{dir_plotter}/views')
+        if not os.path.exists(f'{dir_plotter}/cache'):
+            os.makedirs(f'{dir_plotter}/cache')
         for file in files:
             if not os.path.exists(f"{dir_plotter}/{file}"):
                 f_name = file.replace('.yaml', '')
@@ -186,6 +193,6 @@ def setup_env(force_recreate=True):
 
 def get_paths():
     import importlib
-    resources_path0 = importlib.import_module('plotter.plotter_templates')
-    resources_path = str(resources_path0.__path__).replace("_NamespacePath(['", '').replace("plotter_templates'])", '')
+    resources_path0 = importlib.import_module('chartz.chartz_templates')
+    resources_path = str(resources_path0.__path__).replace("_NamespacePath(['", '').replace("chartz_templates'])", '')
     return resources_path

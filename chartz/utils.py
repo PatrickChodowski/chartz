@@ -12,7 +12,7 @@ def handle_configs(lib_path):
         settings = read_config(f'{config_path}settings.yaml')
         data_sources = read_config(f'{config_path}data_sources.yaml')
 
-        main_filters = read_config(f'{lib_path}plotter_static/main_filters.yaml')
+        main_filters = read_config(f'{lib_path}chartz_static/main_filters.yaml')
         source = settings['data_source']
         main_filters['data_source']['options'] = list()
         for k in data_sources.keys():
@@ -53,7 +53,7 @@ plot_caching: False
 cache_storage: 'local' # gcpbucket or local
 cache_time: 86400 # in seconds
 cache_bucket: 'bucketname' # works only if cache_storage is gcpbucket
-cache_path: './plotter_configs/cache'  # use just 'cache' for gcpbucket
+cache_path: './chartz_configs/cache'  # use just 'cache' for gcpbucket
 
 data_source:
    - name: 'gbq'
@@ -160,33 +160,33 @@ if __name__ == '__main__':
 
 def setup_env(force_recreate=True):
     import os
-    dir_plotter = './plotter_configs'
+    dir_chartz = './chartz_configs'
     function_dict = {'settings': create_settings,
                      'filters': create_filters,
                      'data_sources': create_data_sources}
 
     files = ['settings.yaml', 'filters.yaml', 'data_sources.yaml']
     if force_recreate:
-        os.makedirs(dir_plotter)
-        os.makedirs(f'{dir_plotter}/views')
-        os.makedirs(f'{dir_plotter}/cache')
+        os.makedirs(dir_chartz)
+        os.makedirs(f'{dir_chartz}/views')
+        os.makedirs(f'{dir_chartz}/cache')
         for file in files:
             f_name = file.replace('.yaml', '')
             txt = function_dict[f_name]()
-            with open(f"{dir_plotter}/{file}", "a+") as f:
+            with open(f"{dir_chartz}/{file}", "a+") as f:
                 f.write(txt)
     else:
-        if not os.path.exists(dir_plotter):
-            os.makedirs(dir_plotter)
-        if not os.path.exists(f'{dir_plotter}/views'):
-            os.makedirs(f'{dir_plotter}/views')
-        if not os.path.exists(f'{dir_plotter}/cache'):
-            os.makedirs(f'{dir_plotter}/cache')
+        if not os.path.exists(dir_chartz):
+            os.makedirs(dir_chartz)
+        if not os.path.exists(f'{dir_chartz}/views'):
+            os.makedirs(f'{dir_chartz}/views')
+        if not os.path.exists(f'{dir_chartz}/cache'):
+            os.makedirs(f'{dir_chartz}/cache')
         for file in files:
-            if not os.path.exists(f"{dir_plotter}/{file}"):
+            if not os.path.exists(f"{dir_chartz}/{file}"):
                 f_name = file.replace('.yaml', '')
                 txt = function_dict[f_name]()
-                with open(f"{dir_plotter}/{file}", "a+") as f:
+                with open(f"{dir_chartz}/{file}", "a+") as f:
                     f.write(txt)
     create_example_main()
 

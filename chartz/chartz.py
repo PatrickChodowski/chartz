@@ -21,7 +21,9 @@ plots = Plots(plot_height=setup['settings']['plot_height'],
               bg_color=setup['settings']['bg_color'],
               add_filters=setup['add_filters'],
               data_sources=setup['data_sources'],
-              source=setup['source'])
+              source=setup['source'],
+              plot_caching=setup['plot_caching']
+              )
 
 chartz = Blueprint('chartz',
                     __name__,
@@ -62,39 +64,32 @@ def get_settings():
 @chartz.route('/plot/<type>', methods=['POST', 'GET'])
 def plot(type):
     url = request.url.split('plot/')[1]
-    if plots.check_plot_cache(setup['settings'], url):
-        if setup['settings']['plot_cache_storage'] == 'local':
-            with open(f"{setup['settings']['plot_local_cache']}/{url}.html") as f:
-                p = f.read()
-                return p
-        # elif setup['settings']['plot_cache_storage'] == 'gcpbucket':
-        #     path = f"{setup['settings']['plot_gcpbucket_path']}{url}.html"
-        #     blob = bucket.blob(path)
-        #     p = blob.download_as_string()
-        #     return p
+    args = request.args.to_dict()
+    if plots.check_plot_cache(url=url):
+        p = plots.get_cached_plot(url=url)
+        return p
     else:
-        args = request.args.to_dict()
         p = plot_type_dict[type](**args)
         if isinstance(p, str):
             return f'<a class="error_msg"> {p} </a>'
         else:
             p_script, p_div = components(p)
             html_file = render_template('plot.html',
-                                        bokeh_js=js_resources,
-                                        bokeh_css=css_resources,
-                                        plot_script=p_script,
-                                        plot_div=p_div)
+                                            bokeh_js=js_resources,
+                                            bokeh_css=css_resources,
+                                            plot_script=p_script,
+                                            plot_div=p_div)
 
-        if setup['settings']['plot_caching']:
-            if setup['settings']['plot_cache_storage'] == 'local':
-                with open(f"{setup['settings']['plot_local_cache']}/{url}.html", "w+") as f:
-                    f.write(html_file)
-            # else:
-            #     file_blob = bucket.blob(f"{setup['settings']['plot_gcpbucket_path']}{url}.html")
-            #     with open(f'/tmp/{url}.html', "w+") as f:
-            #         f.write(html_file)
-            #     file_blob.upload_from_filename(f'/tmp/{url}.html')
-        return html_file
+            if setup['plot_caching']['active']:
+                if setup['plot_caching']['cache_storage'] == 'local':
+                    with open(f"{setup['plot_caching']['cache_path']}/{url}.html", "w+") as f:
+                        f.write(html_file)
+                elif setup['plot_caching']['cache_storage'] == 'gcpbucket':
+                    file_blob = plots.bucket.blob(f"{setup['plot_caching']['cache_path']}/{url}.html")
+                    with open(f"{setup['plot_caching']['cache_path']}/{url}.html", "w+") as f:
+                        f.write(html_file)
+                    file_blob.upload_from_filename(f"{setup['plot_caching']['cache_path']}/{url}.html")
+            return html_file
 
 
 @chartz.route('/save_view', methods=['POST'])

@@ -17,7 +17,7 @@ from bokeh.transform import factor_cmap
 
 
 class Plots:
-    def __init__(self, plot_height, plot_width, f_color, bg_color, add_filters, data_sources, source):
+    def __init__(self, plot_height, plot_width, f_color, bg_color, add_filters, data_sources, source, plot_caching):
         self.plot_height = plot_height
         self.plot_width = plot_width
         self.f_color = f_color
@@ -25,9 +25,11 @@ class Plots:
         self.add_filters = add_filters
         self.source = source
         self.data_sources = data_sources
+        self.plot_caching = plot_caching
 
         self.title_text = None
         self.client = None
+        self.bucket = None
         self.con_q = {
                     'bigquery': self._data_bigquery,
                     'postgresql': self._data_sql
@@ -442,16 +444,66 @@ FROM {args['project']}.{args['schema']}.{df_name} WHERE 1=1
 
         return figure
 
-    def check_plot_cache(self, settings, url):
-        if settings['plot_caching']:
-            if settings['plot_cache_storage'] == 'local':
-                import os.path
-                return os.path.exists(settings['plot_local_cache'] + '/' + url + '.html')
-            elif settings['plot_cache_storage'] == 'gcpbucket':
-                path = f"{settings['plot_gcpbucket_path']}{url}.html"
-                blob = bucket.blob(path)
-                return blob.exists()
-            else:
-                return False
+    def _handle_local_cache(self, url):
+        '''
+        :return:  True/False  if the plot is cached or not in the local directory
+        '''
+        import os.path
+        return os.path.exists(self.plot_caching['cache_path'] + '/' + url + '.html')
+
+    def _connect_gcp_bucket(self):
+        '''
+        :return: creates connection to gcp bucket using big query credentials from settings['data_source']
+        '''
+        from google.oauth2 import service_account
+        from google.cloud import storage
+        credentials = service_account.Credentials.from_service_account_file(self.source['sa_path'])
+        bucket_client = storage.Client(
+            credentials=credentials,
+            project=self.source['project'],
+        )
+        self.bucket = bucket_client.get_bucket(self.plot_caching['cache_bucket'])
+
+
+    def _handle_gcp_cache(self, url):
+        '''
+        :return: True/False if the plot is cached or not in the gcp bucket
+        '''
+        if self.bucket is None:
+            self._connect_gcp_bucket()
+        path = f"{self.plot_caching['cache_path']}{url}.html"
+        blob = self.bucket.blob(path)
+        return blob.exists()
+
+    def check_plot_cache(self, url):
+        '''
+        :return: True/False if the plot is cached and is up to date (was created within time specified in self.plot_caching['cache_time']
+        If caching is switched off, then returns False and lets code make query, run query and create plot
+        '''
+        if self.plot_caching['active']:
+            cache_dict = {'local': self._handle_local_cache,
+                          'gcpbucket': self._handle_gcp_cache}
+            plot_exists =  cache_dict[self.plot_caching['cache_storage']](url)
+            return plot_exists
         else:
             return False
+
+    def get_cached_plot(self, url):
+        '''
+        :param url: url of the plot, already checked if its cached
+        :return: return plot file
+        '''
+        cache_dict = {'local': self._get_plot_local,
+                      'gcpbucket': self._get_plot_gcp}
+        return cache_dict[self.plot_caching['cache_storage']](url)
+
+    def _get_plot_local(self, url):
+        with open(f"{self.plot_caching['cache_path']}/{url}.html") as f:
+            p = f.read()
+            return p
+
+    def _get_plot_gcp(self, url):
+        path = f"{self.plot_caching['cache_path']}{url}.html"
+        blob = self.bucket.blob(path)
+        p = blob.download_as_string()
+        return p

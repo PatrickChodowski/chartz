@@ -32,6 +32,7 @@ def handle_configs(lib_path):
         setup['dim_filters'] = filters
         setup['data_sources'] = data_sources
         setup['main_filters'] = main_filters
+        setup['plot_caching'] = settings['plot_caching']
         return setup
     except AssertionError:
         if type(which_active) != int:
@@ -49,11 +50,12 @@ f_color: '#7FFFD4'
 plot_height: '400px'
 plot_width: '470px'
 
-plot_caching: False
-cache_storage: 'local' # gcpbucket or local
-cache_time: 86400 # in seconds
-cache_bucket: 'bucketname' # works only if cache_storage is gcpbucket
-cache_path: './chartz_configs/cache'  # use just 'cache' for gcpbucket
+plot_caching: 
+  active: False
+  cache_storage: local #gcpbucket (possible only if you have bigquery as data source)
+  cache_time: 86400
+  cache_bucket: "models_ballr" #works only if cache_storage is gcpbucket
+  cache_path: "./chartz_configs/cache"  #cache for gcpbucket
 
 data_source:
    - name: 'gbq'

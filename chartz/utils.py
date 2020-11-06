@@ -47,22 +47,23 @@ def create_settings():
 bg_color: '#4d4d4d'
 filters_bg_color: '#007fff'
 f_color: '#7FFFD4'
-plot_height: '400px'
-plot_width: '470px'
+plot_height: 400
+plot_width: 470
 
 plot_caching: 
   active: False
   cache_storage: local #gcpbucket (possible only if you have bigquery as data source)
   cache_time: 86400
-  cache_bucket: "models_ballr" #works only if cache_storage is gcpbucket
+  cache_bucket: "bucket_name" #works only if cache_storage is gcpbucket
   cache_path: "./chartz_configs/cache"  #cache for gcpbucket
 
 data_source:
    - name: 'gbq'
      source: 'bigquery'
      project: 'project_name'
+     connection_type: 'personal_account' # 'service_account'
      schema: 'dash'
-     sa_path: 'sa_file_path.json'
+     sa_path: 'sa_file_path.json' # only if connection type is service account
      active: True
 
    - name: 'pgsql'
@@ -140,7 +141,7 @@ from flask import Flask
 import os
 
 SECRET_KEY = os.urandom(32)
-from chartz.chartz import chartz
+from chartz import chartz
 app = Flask(__name__)
 app.config['SECRET_KEY'] = SECRET_KEY
 app.config["FLASK_DEBUG"] = 0

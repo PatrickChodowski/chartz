@@ -57,11 +57,20 @@ class Plots:
     def _connect_bigquery(self):
         from google.cloud import bigquery
         from google.oauth2 import service_account
-        credentials = service_account.Credentials.from_service_account_file(self.source['sa_path'])
-        self.client = bigquery.Client(
-            credentials=credentials,
-            project=self.source['project'],
-        )
+
+        if self.source['connection_type'] == 'service_account':
+            credentials = service_account.Credentials.from_service_account_file(self.source['sa_path'])
+            self.client = bigquery.Client(
+                credentials=credentials,
+                project=self.source['project'],
+            )
+        elif self.source['connection_type'] == 'personal_account':
+            # personal account ran from identification before
+            # gcloud auth application-default login
+            self.client = bigquery.Client(
+                project=self.source['project'],
+            )
+
 
     def _connect_postgresql(self):
         from sqlalchemy import create_engine

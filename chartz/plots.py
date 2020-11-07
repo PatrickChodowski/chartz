@@ -14,6 +14,12 @@ from bokeh.transform import factor_cmap
 
 
 class Plots:
+    '''
+    Plots class handles the connection to database (big_query, postgres),
+    initiates query builder class with arguments from client , sql builder send back the query and
+    it reads the data and builds the plot
+    '''
+
     def __init__(self, plot_height, plot_width, f_color, bg_color, add_filters, data_sources, source, plot_caching):
         self.plot_height = plot_height
         self.plot_width = plot_width
@@ -32,7 +38,7 @@ class Plots:
                     'postgresql': self._data_sql
                 }
 
-    def _handle_connection(self, **params):
+    def _handle_connection(self):
         if self.client is None:
             try:
                 assert self.source['source'] in ['bigquery', 'postgresql']
@@ -46,11 +52,18 @@ class Plots:
         else:
             pass
 
+    @staticmethod
+    def _init_sql(**params):
+        from chartz import SqlBuilder
+        sql_builder = SqlBuilder(**params)
+        sql, metrics = sql_builder.make_query()
+        return sql, metrics
+
     def _handle_data(self, **params):
         args = self.source
         all_params = {**args, **params}
         self._handle_connection(**params)
-        sql, metrics = self._make_query(**all_params)
+        sql, metrics = self._init_sql(**all_params)
         df = self.con_q[self.source['source']](sql)
         return df, metrics
 
@@ -71,7 +84,6 @@ class Plots:
                 project=self.source['project'],
             )
 
-
     def _connect_postgresql(self):
         from sqlalchemy import create_engine
         db_string = f"postgres://{self.source['user']}:{self.source['password']}@{self.source['host']}:{self.source['port']}/{self.source['database']}"
@@ -91,71 +103,6 @@ class Plots:
         if df.shape[0] == 0:
             raise ValueError(f"""Value error: Empty dataset. Please double check query: {sql}""")
         return df
-
-    def _make_query(self, **args):
-        possible_calcs = self.data_sources[args['source']]['calculations']
-        calcs_dict = dict((key, d[key]) for d in possible_calcs for key in d)
-        calcs = list(calcs_dict.keys())
-        metrics = args['metrics'].split(';')
-        df_name = self.data_sources[args['source']]['table']
-
-        req_fields = self.data_sources[args['source']]['req_fields']
-        if req_fields is not None:
-            # remove from req fields if given fields is already in dimensions or metrics:
-            req_fields2 = [rq for rq in req_fields if (rq not in metrics) & (rq != args['dimensions'])]
-            rqf_txt = ','.join(req_fields2) + ','
-        else:
-            rqf_txt = ''
-
-        # disgusting
-        if args['aggr_type'] == '':
-            prtn_txt_1 = ''
-            prtn_txt_2 = ''
-            gb_txt = ''
-        else:
-            prtn_txt_1 = '('
-            prtn_txt_2 = ')'
-            rqf_txt = ''  # erases required columns if there is  aggregation
-            if args['dimensions'] != '':
-                gb_txt = f"GROUP BY {rqf_txt}{args['dimensions']}"
-            else:
-                gb_txt = ''
-
-        if args['dimensions'] == '':
-            cm_txt = ''
-        else:
-            cm_txt = ', '
-
-        colqs = list()
-        for nc in metrics:
-            if nc not in calcs:
-                colqs.append(f"{args['aggr_type']}{prtn_txt_1}{nc}{prtn_txt_2} AS {nc}")
-            else:
-                colqs.append(f"{calcs_dict[nc]} AS {nc}")
-        num_cols = ','.join(colqs)
-
-        sql = f"""SELECT {rqf_txt} {args['dimensions']}{cm_txt}{num_cols}
-FROM {args['project']}.{args['schema']}.{df_name} WHERE 1=1
-"""
-        for k, v in args.items():
-            if k in self.add_filters:
-                if ';' in v:
-                    v2 = "('" + v.replace(";", "','") + "')"
-                    wstr = f" AND CAST({k} AS STRING) IN {v2} "
-                else:
-                    wstr = f" AND CAST({k} AS STRING) = '{v}' "
-                sql += wstr
-            else:
-                pass
-        sql += gb_txt
-
-        if (args['having'] != '') & (gb_txt != ''):
-            sql += f" HAVING {args['having']} "
-
-        obl_txt = f" ORDER BY {metrics[0]} DESC LIMIT {args['show_top_n']} "
-        sql += obl_txt
-        print(sql)
-        return sql, metrics
 
     def plot_box(self, **params):
         import math
@@ -468,11 +415,20 @@ FROM {args['project']}.{args['schema']}.{df_name} WHERE 1=1
         '''
         from google.oauth2 import service_account
         from google.cloud import storage
-        credentials = service_account.Credentials.from_service_account_file(self.source['sa_path'])
-        bucket_client = storage.Client(
-            credentials=credentials,
-            project=self.source['project'],
-        )
+
+        if self.source['connection_type'] == 'service_account':
+            credentials = service_account.Credentials.from_service_account_file(self.source['sa_path'])
+            bucket_client = storage.Client(
+                credentials=credentials,
+                project=self.source['project'],
+            )
+        elif self.source['connection_type'] == 'personal_account':
+            # personal account ran from identification before
+            # gcloud auth application-default login
+            bucket_client = storage.Client(
+                project=self.source['project'],
+            )
+
         self.bucket = bucket_client.get_bucket(self.plot_caching['cache_bucket'])
 
     def _check_gcp_cache(self, url):
@@ -523,3 +479,4 @@ FROM {args['project']}.{args['schema']}.{df_name} WHERE 1=1
         blob = self.bucket.blob(path)
         p = blob.download_as_string()
         return p
+

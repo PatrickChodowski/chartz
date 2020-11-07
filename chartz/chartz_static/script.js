@@ -26,12 +26,21 @@ $("document").ready(function(){
     f_vars = {};
     query_logger = {};
     query_logger_list = [];
+
     var metrics_choices = new Choices('#metrics',
     {   'maxItemCount': -1,
         'itemSelectText': '',
         'placeholder': false,
         'placeholderValue': ''
     });
+
+    var dimensions_choices = new Choices('#dimensions',
+    {   'maxItemCount': -1,
+        'itemSelectText': '',
+        'placeholder': false,
+        'placeholderValue': ''
+    });
+
 
 
     // handle filter_info - creating new filter
@@ -69,7 +78,8 @@ $("document").ready(function(){
             add_options(select, options);
             select.insertAdjacentHTML('beforeend', `<label for="${id}" style="margin-left: 1px;" >${nice_name}</label>`);
             select.addEventListener('change', handle_new_input, false);
-                var metrics_choices = new Choices(`#${id}`,
+
+                var filters_choices = new Choices(`#${id}`,
                     {   'maxItemCount': -1,
                         'itemSelectText': '',
                         'placeholder': false,
@@ -172,18 +182,24 @@ $("document").ready(function(){
             let dimensions_select = document.getElementById('dimensions');
             add_options(dimensions_select, dimensions);
 
-            // feeding choices.js metrics
+            // feeding choices.js metrics and dimensions
             metrics_choices.clearStore();
+            dimensions_choices.clearStore();
 
             if(typeof calculations !== "undefined"){
                 var calcs = calculations.map(function(x){ return Object.keys(x)[0]; });
-                var all_choices = metrics.concat(calcs);
+                var all_metrics_choices = metrics.concat(calcs);
             } else {
-                var all_choices = metrics;
+                var all_metrics_choices = metrics;
             }
+
             var metrics_dict = [];
-            all_choices.forEach(element => metrics_dict.push({value: element, label: element, disabled: false }));
+            all_metrics_choices.forEach(element => metrics_dict.push({value: element, label: element, disabled: false }));
             metrics_choices.setChoices(metrics_dict);
+
+            var dimensions_dict = [];
+            dimensions.forEach(element => dimensions_dict.push({value: element, label: element, disabled: false }));
+            dimensions_choices.setChoices(dimensions_dict);
 
             // filters
             let filters_select = document.getElementById('dim_filters');
@@ -402,8 +418,10 @@ $("document").ready(function(){
                   query_logger[plot_id] = plot_info;
                   query_logger_list[plot_id] = url_plot;
                 })
-                .fail(function() {
-                    alert('This query wont work');
+                .fail(function(xhr, status, error) {
+                    //alert('This query wont work');
+                    // thanks patrick
+                    alert(xhr.responseText);
                 })
                  .always(function() {
                    document.body.style.cursor = 'default';

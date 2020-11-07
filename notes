@@ -1,0 +1,17 @@
+
+kazde query generalnie powinno przejsc
+
+
+
+barchart powinien wymagac dimension, nie?
+
+
+albo wywalac error gdy nie ma i juz
+
+
+ale query niech przechodzi zawsze moze najpierw
+
+# grouping zalezne tylko od aggregation type
+
+
+split plots into plots class, sql builder class, connection handler

@@ -18,27 +18,27 @@ else:
     except KeyError:
         print('Have you created settings.yaml? Try running setup_env() from chartz.utils as a first step')
 
-plots = Plots(plot_height=setup['settings']['plot_height'],
-              plot_width=setup['settings']['plot_width'],
-              f_color=setup['settings']['f_color'],
-              bg_color=setup['settings']['bg_color'],
-              add_filters=setup['add_filters'],
-              data_sources=setup['data_sources'],
-              source=setup['source'],
-              plot_caching=setup['plot_caching']
-              )
+    plots = Plots(plot_height=setup['settings']['plot_height'],
+                  plot_width=setup['settings']['plot_width'],
+                  f_color=setup['settings']['f_color'],
+                  bg_color=setup['settings']['bg_color'],
+                  add_filters=setup['add_filters'],
+                  data_sources=setup['data_sources'],
+                  source=setup['source'],
+                  plot_caching=setup['plot_caching']
+                  )
+
+    plot_type_dict = {'bar':    plots.plot_bar,
+                      'points': plots.plot_points,
+                      'time':   plots.plot_time,
+                      'box':    plots.plot_box,
+                      'shot':   plots.plot_shots,
+                      'table':  plots.plot_table}
 
 chartz = Blueprint('chartz',
-                   __name__,
-                   template_folder=f'{resources_path}chartz_templates',
-                   static_folder=f'{resources_path}chartz_static')
-
-plot_type_dict = {'bar':    plots.plot_bar,
-                  'points': plots.plot_points,
-                  'time':   plots.plot_time,
-                  'box':    plots.plot_box,
-                  'shot':   plots.plot_shots,
-                  'table':  plots.plot_table}
+                    __name__,
+                    template_folder=f'{resources_path}chartz_templates',
+                    static_folder=f'{resources_path}chartz_static')
 
 @chartz.route('/dash', methods=['POST', 'GET'])
 def dash():

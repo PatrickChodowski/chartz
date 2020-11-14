@@ -55,8 +55,10 @@ class Plots:
     @staticmethod
     def _init_sql(**params):
         from chartz import SqlBuilder
+
         sql_builder = SqlBuilder(**params)
-        sql, metrics = sql_builder.make_query()
+        sql = sql_builder.make_query()
+        metrics = sql_builder.metrics
         return sql, metrics
 
     def _handle_data(self, **params):

@@ -15,62 +15,70 @@ class SqlBuilder:
     '''
 
     def __init__(self, **kwargs):
-        self.metrics_txt = kwargs['metrics']
-        self.dimensions_txt = kwargs['dimensions']
+        self.metrics = kwargs['metrics'].split(';')
+        self.dimensions = kwargs['dimensions'].split(';')
         self.df_name = kwargs['source']['table']
         self.project = kwargs['project']
         self.schema = kwargs['schema']
         self.possible_calcs = kwargs['source']['possible_calcs']
-
-
-
-
-
-
-
-
-
+        self.filters = kwargs['filters']
+        self.add_filters = kwargs['add_filters']
+        self.having = kwargs['having']
+        self.show_top_n = kwargs['show_top_n']
+        self.data_sources = kwargs['data_sources']
 
     def _no_aggr_select(self, **args):
-        metrics = args['metrics'].split(';')
-        dimensions = args['dimensions'].split(';')
+        select_txt = ''
 
-        metrics_txt = ', '.join(metrics)
-        if dimensions.__len__() > 0:
-            dim_txt = ', '.join(dimensions)
-            cm_txt = ', '
-        else:
-            dim_txt, cm_txt = '', ''
+        if self.dimensions.__len__() > 0:
+            dim_txt = ', '.join(self.dimensions)
+            select_txt += dim_txt
+            select_txt += ','
 
-        sql = f"""SELECT {dim_txt}{cm_txt}{metrics_txt}
-        FROM {args['project']}.{args['schema']}.{args['df_name']} WHERE 1=1
-        """
+        if self.metrics.__len__() > 0:
+            metrics_txt = ', '.join(self.metrics)
+            select_txt += metrics_txt
+
+        where_str = self._gen_where_statements()
+        ord_txt = self._gen_order_statement()
+
+        sql = f"""SELECT {select_txt} FROM {args['project']}.{args['schema']}.{args['df_name']} 
+WHERE 1=1 {where_str} {ord_txt}"""
         return sql
 
     def _gb_aggr_select(self, **args):
-        metrics = args['metrics'].split(';')
-        dimensions = args['dimensions'].split(';')
+        select_txt = ''
+        gb_txt = ''
+        metric_queries = list()
+        hv_txt = ''
 
-        if dimensions.__len__() > 0:
-            dim_txt = ', '.join(dimensions)
-            cm_txt = ', '
-            gb_dm_txt = f'GROUP BY {dim_txt}'
-        else:
-            dim_txt, cm_txt, gb_dm_txt = '', '', ''
+        if self.dimensions.__len__() > 0:
+            dim_txt = ', '.join(self.dimensions)
+            select_txt += dim_txt
+            select_txt += ','
+            gb_txt = f'GROUP BY {dim_txt}'
+            hv_txt = self._gen_having_statement(gb_txt)
 
-        for nc in metrics:
-            if nc not in calcs:
-                colqs.append(f"{args['aggr_type']}{prtn_txt_1}{nc}{prtn_txt_2} AS {nc}")
+        for nc in self.metrics:
+            if nc not in args['calcs']:
+                metric_queries.append(f"{args['aggr_type']}({nc}) AS {nc}")
 
+        metrics_txt = ','.join(metric_queries)
+        select_txt += metrics_txt
 
+        where_str = self._gen_where_statements()
+        ord_txt = self._gen_order_statement()
+        sql = f"""SELECT {select_txt} FROM {args['project']}.{args['schema']}.{args['df_name']} 
+WHERE 1=1 {where_str} {gb_txt} {hv_txt} {ord_txt}"""
 
+        return sql
 
 
     def _window_aggr_select(self):
-        NotImplementedError
+        return NotImplementedError()
 
 
-    def _make_query(self, **args):
+    def make_query(self, **args):
         # read table name
         df_name = self.data_sources[args['source']]['table']
         args['df_name'] = df_name
@@ -95,41 +103,37 @@ class SqlBuilder:
         sql_switch = {'':   self._no_aggr_select,
                       'sum': self._gb_aggr_select,
                       'mean': self._gb_aggr_select,
-                      'quantiles':self._window_aggr_select}
-        sql_base = sql_switch[args['aggr_type']](**args)
+                      'quantiles': self._window_aggr_select}
+        sql = sql_switch[args['aggr_type']](**args)
+
+        return sql
 
 
-
-        colqs = list()
-        for nc in metrics:
-            if nc not in calcs:
-                colqs.append(f"{args['aggr_type']}{prtn_txt_1}{nc}{prtn_txt_2} AS {nc}")
-            else:
-                colqs.append(f"{calcs_dict[nc]} AS {nc}")
-        num_cols = ','.join(colqs)
-
-        sql = f"""SELECT {rqf_txt} {gb_dim_txt}{cm_txt}{num_cols}
-FROM {args['project']}.{args['schema']}.{df_name} WHERE 1=1
-"""
-        for k, v in args.items():
+    def _gen_where_statements(self):
+        where_str = ''
+        for k, v in self.filters:
             if k in self.add_filters:
                 if ';' in v:
                     v2 = "('" + v.replace(";", "','") + "')"
                     wstr = f" AND CAST({k} AS STRING) IN {v2} "
                 else:
                     wstr = f" AND CAST({k} AS STRING) = '{v}' "
-                sql += wstr
+                where_str += wstr
             else:
                 pass
-        sql += gb_txt
+        return where_str
 
-        if (args['having'] != '') & (gb_txt != ''):
-            sql += f" HAVING {args['having']} "
+    def _gen_having_statement(self, gb_txt):
+        hv_txt = ''
+        if (gb_txt != '') & (self.having != ''):
+            hv_txt = f'HAVING {self.having} '
+        return hv_txt
 
-        obl_txt = f" ORDER BY {metrics[0]} DESC LIMIT {args['show_top_n']} "
-        sql += obl_txt
-        print(sql)
-        return sql, metrics
+    def _gen_order_statement(self):
+        ord_txt = ''
+        if (self.metrics.__len__() > 0) & (self.show_top_n > 0):
+            ord_txt = f" ORDER BY {self.metrics[0]} DESC LIMIT {self.show_top_n} "
+        return ord_txt
 
     @staticmethod
     def check_key(dict, key):

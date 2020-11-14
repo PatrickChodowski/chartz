@@ -26,9 +26,9 @@ plots = Plots(plot_height=setup['settings']['plot_height'],
               )
 
 chartz = Blueprint('chartz',
-                    __name__,
-                    template_folder=f'{resources_path}chartz_templates',
-                    static_folder=f'{resources_path}chartz_static')
+                   __name__,
+                   template_folder=f'{resources_path}chartz_templates',
+                   static_folder=f'{resources_path}chartz_static')
 
 plot_type_dict = {'bar':    plots.plot_bar,
                   'points': plots.plot_points,
@@ -75,10 +75,10 @@ def plot(type):
         else:
             p_script, p_div = components(p)
             html_file = render_template('plot.html',
-                                            bokeh_js=js_resources,
-                                            bokeh_css=css_resources,
-                                            plot_script=p_script,
-                                            plot_div=p_div)
+                                        bokeh_js=js_resources,
+                                        bokeh_css=css_resources,
+                                        plot_script=p_script,
+                                        plot_div=p_div)
 
             if setup['plot_caching']['active']:
                 if setup['plot_caching']['cache_storage'] == 'local':

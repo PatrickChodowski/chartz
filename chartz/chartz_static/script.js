@@ -45,11 +45,13 @@ $("document").ready(function(){
 
     // handle filter_info - creating new filter
       function handle_filter_info(x){
-        var nice_name = x['name'];
-        var type = x['type'];
-        var id = x['value'];
-        var options = x['options'];
-        var operators = x['operators'];
+        let nice_name = x['name'];
+        let type = x['type'];
+        let id = x['value'];
+        let options = x['options'];
+        let operators = x['operators'];
+        let filter_name = x['filter_name']
+
 
         var f_window = document.getElementById('add_filters_window_list');
         f_window.insertAdjacentHTML('beforeend', `<div class="row selected_filter_area" id="sfa_${filter_name}"> <button id="rm_${id}" class="rm_button"> X </button></div>`);

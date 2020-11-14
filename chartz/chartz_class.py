@@ -10,10 +10,13 @@ css_resources = INLINE.render_css()
 resources_path = get_paths()
 setup = handle_configs(resources_path)
 
-try:
-    setup['settings']['plot_height']
-except KeyError:
-    print('Have you created settings.yaml? Try running setup_env() from chartz.utils as a first step')
+if setup is None:
+    print('setup not created yet')
+else:
+    try:
+        setup['settings']['plot_height']
+    except KeyError:
+        print('Have you created settings.yaml? Try running setup_env() from chartz.utils as a first step')
 
 plots = Plots(plot_height=setup['settings']['plot_height'],
               plot_width=setup['settings']['plot_width'],
@@ -54,6 +57,7 @@ def get_data_sources():
 def get_filter_info():
     args = request.args.to_dict()
     filter_data = setup['dim_filters'][args['filter_name']]
+    filter_data['filter_name'] = args['filter_name']
     return filter_data
 
 @chartz.route('/get_settings', methods=['POST'])

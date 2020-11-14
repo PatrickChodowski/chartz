@@ -11,7 +11,6 @@ def handle_configs(lib_path):
         filters = read_config(f'{config_path}filters.yaml')
         settings = read_config(f'{config_path}settings.yaml')
         data_sources = read_config(f'{config_path}data_sources.yaml')
-
         main_filters = read_config(f'{lib_path}chartz_static/main_filters.yaml')
         source = settings['data_source']
         main_filters['data_source']['options'] = list()
@@ -134,7 +133,7 @@ unique_ds_name:
     return ds_example
 
 
-def create_example_main():
+def create_example_main(parent_directory='.'):
     import os
     example_main_text = """
 from flask import Flask
@@ -156,14 +155,14 @@ def index():
 if __name__ == '__main__':
    app.run(port=5001, debug=False)    
 """
-    if not os.path.exists("example_main.py"):
-        with open(f"example_main.py", "a+") as f:
+    if not os.path.exists(f"{parent_directory}/example_main.py"):
+        with open(f"{parent_directory}/example_main.py", "a+") as f:
             f.write(example_main_text)
 
 
-def setup_env(force_recreate=True):
+def setup_env(parent_directory='.', force_recreate=True):
     import os
-    dir_chartz = './chartz_configs'
+    dir_chartz = f'{parent_directory}/chartz_configs'
     function_dict = {'settings': create_settings,
                      'filters': create_filters,
                      'data_sources': create_data_sources}
@@ -191,7 +190,7 @@ def setup_env(force_recreate=True):
                 txt = function_dict[f_name]()
                 with open(f"{dir_chartz}/{file}", "a+") as f:
                     f.write(txt)
-    create_example_main()
+    create_example_main(parent_directory)
 
 
 def get_paths():

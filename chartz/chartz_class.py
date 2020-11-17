@@ -26,7 +26,6 @@ else:
     except KeyError:
         print('Have you created settings.yaml? Try running setup_env() from chartz.utils as a first step')
 
-    print(setup)
     plots = Plots(plot_height=setup['settings']['plot_height'],
                   plot_width=setup['settings']['plot_width'],
                   f_color=setup['settings']['f_color'],

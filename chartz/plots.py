@@ -94,19 +94,26 @@ class Plots:
         self.client = create_engine(db_string)
 
     def _data_bigquery(self, sql):
-        df = self.client.query(query=sql).to_dataframe()
-        df = df.round(3)
-        if df.shape[0] == 0:
-            raise ValueError(f"""Value error: Empty dataset. Please double check query: {sql}""")
-        return df
+        try:
+            df = self.client.query(query=sql).to_dataframe()
+            df = df.round(3)
+            if df.shape[0] == 0:
+                raise Exception(f"""Empty dataset. Please double check query: {sql}""")
+
+            return df
+        except Exception as e:
+            return f"<br><br> Plot error: <br> {str(e)}"
 
     def _data_sql(self, sql):
-        import pandas as pd
-        df = pd.read_sql(sql, con=self.client)
-        df = df.round(3)
-        if df.shape[0] == 0:
-            raise ValueError(f"""Value error: Empty dataset. Please double check query: {sql}""")
-        return df
+        try:
+            import pandas as pd
+            df = pd.read_sql(sql, con=self.client)
+            df = df.round(3)
+            if df.shape[0] == 0:
+                raise Exception(f"""Empty dataset. Please double check query: {sql}""")
+            return df
+        except Exception as e:
+            return f"<br><br> Plot error: <br> {str(e)}"
 
     def plot_box(self, **params):
         import math
@@ -196,22 +203,17 @@ class Plots:
         import math
         from statistics import median
         try:
+            if (params['dimensions'] == '') | (';' in params['dimensions']):
+                raise Exception("Bar Chart requires exactly one dimension")
+
+            if (params['aggr_type'] == ''):
+                raise Exception("Bar Chart requires an aggregation")
+
             df, metrics = self._handle_data(**params)
             source_aggr = ColumnDataSource(df)
             metric = metrics[0]
             up_limit = int(round(math.ceil(max(df[metric])) + median(df[metric].values) * 0.1))
             df_aggr = source_aggr.data[params['dimensions']]
-        except ValueError as e:
-            return str(e)
-        except KeyError as e:
-            if params['dimensions'] == '':
-                return 'Bar chart requires grouping dimension'
-            else:
-                return str(e)
-
-        try:
-            if df[params['dimensions']].nunique() != df.shape[0]:
-                raise ValueError('Data is not aggregated. Please select aggregation type')
 
             p2 = figure(x_range=df_aggr,
                         y_range=[0, up_limit],
@@ -223,14 +225,16 @@ class Plots:
             p2.xaxis.major_label_orientation = 0.9
             p2.left[0].formatter.use_scientific = False
             return p2
-        except ValueError as e:
-            return str(e)
+        except Exception as e:
+            return f"<br><br> Plot error: <br> {str(e)}"
 
     def plot_points(self, **params):
         import math
         from statistics import median
-
         try:
+            if params['metrics'].split(';').__len__() != 2:
+                raise Exception("Points Chart requires exactly 2 metrics")
+
             df, metrics = self._handle_data(**params)
             metric1 = metrics[0]
             metric2 = metrics[1]
@@ -245,18 +249,7 @@ class Plots:
 
             if down_limit2 == up_limit2:
                 down_limit2 = down_limit2 - 1
-        except ValueError as e:
-            return str(e)
-        except IndexError as e:
-            return "Points chart requires exactly 2 metrics"
-        except KeyError as e:
-            if params['dimensions'] == '':
-                return 'Points chart requires grouping dimension'
-            else:
-                return str(e)
-        try:
-            if (params['dimensions'] == '') | (params['aggr_type'] == ''):
-                raise KeyError
+
             p2 = figure(x_range=[down_limit1, up_limit1],
                         y_range=[down_limit2, up_limit2],
                         plot_height=self.plot_height,
@@ -276,10 +269,9 @@ class Plots:
                     text_align="center", text_font_size="10pt")
 
             p2 = self._style_plot(p2)
-        except KeyError as e:
-            return 'Points chart requires grouping dimension and aggregation'
-
-        return p2
+            return p2
+        except Exception as e:
+            return f"<br><br> Plot error: <br> {str(e)}"
 
     def plot_table(self, **params):
         from bokeh.models.widgets import DataTable, TableColumn
@@ -301,8 +293,12 @@ class Plots:
 
     def plot_shots(self, **params):
         try:
+            if (params['aggr_type'] != ''):
+                raise Exception("Shot Chart cant have an aggregation")
+
+            params['req_fields'] = 'loc_y,loc_x,shot_made_flag'
             df, metrics = self._handle_data(**params)
-            df['made'] = df['made'].astype('str')
+
             source = ColumnDataSource(df)
             p2 = figure(width=470, height=460,
                         x_range=[-250, 250],
@@ -322,12 +318,9 @@ class Plots:
 
             self._draw_court(p2, line_width=1)
             p2 = self._style_plot(p2)
-        except KeyError as e:
-            if params['aggr_type'] != '':
-                return "Shotchart wont work with nonempty aggregation"
-            else:
-                return e
-        return p2
+            return p2
+        except Exception as e:
+            return f"<br><br> Plot error: <br> {str(e)}"
 
     def _style_plot(self, p):
         p.toolbar.logo = None

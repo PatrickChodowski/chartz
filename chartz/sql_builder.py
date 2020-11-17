@@ -15,8 +15,6 @@ class SqlBuilder:
     '''
 
     def __init__(self, **kwargs):
-        logging.info(kwargs)
-        print(kwargs)
         self.metrics = kwargs['metrics'].split(';')
         self.dimensions = kwargs['dimensions'].split(';')
         self.source = kwargs['source']
@@ -37,35 +35,43 @@ class SqlBuilder:
         self.df_name = None
         self.calculations = None
 
+        self.req_fields = None
+        if 'req_fields' in kwargs.keys():
+            self.req_fields = kwargs['req_fields']
+
+
     def _no_aggr_select(self, **args):
-        select_txt = ''
+        select_list = list()
 
-        if self.dimensions.__len__() > 0:
+        if (self.dimensions.__len__() > 0) & (self.dimensions != ['']):
             dim_txt = ', '.join(self.dimensions)
-            select_txt += dim_txt
-            select_txt += ','
+            select_list.append(dim_txt)
 
-        if self.metrics.__len__() > 0:
+        if (self.dimensions.__len__() > 0) & (self.metrics != ['']):
             metrics_txt = ', '.join(self.metrics)
-            select_txt += metrics_txt
+            select_list.append(metrics_txt)
+
+        # required fields
+        if self.req_fields is not None:
+            select_list.append(self.req_fields)
 
         where_str = self._gen_where_statements()
         ord_txt = self._gen_order_statement()
 
-        sql = f"""SELECT {select_txt} FROM {args['project']}.{args['schema']}.{args['df_name']} 
+        select_txt = ','.join(select_list)
+        sql = f"""SELECT {select_txt} FROM {self.project}.{self.schema}.{self.df_name} 
 WHERE 1=1 {where_str} {ord_txt}"""
         return sql
 
     def _gb_aggr_select(self, **args):
-        select_txt = ''
+        select_list = list()
         gb_txt = ''
         metric_queries = list()
         hv_txt = ''
 
-        if self.dimensions.__len__() > 0:
+        if (self.dimensions.__len__() > 0) & (self.dimensions != ['']):
             dim_txt = ', '.join(self.dimensions)
-            select_txt += dim_txt
-            select_txt += ','
+            select_list.append(dim_txt)
             gb_txt = f'GROUP BY {dim_txt}'
             hv_txt = self._gen_having_statement(gb_txt)
 
@@ -74,7 +80,8 @@ WHERE 1=1 {where_str} {ord_txt}"""
                 metric_queries.append(f"{self.aggr_type}({nc}) AS {nc}")
 
         metrics_txt = ','.join(metric_queries)
-        select_txt += metrics_txt
+        select_list.append(metrics_txt)
+        select_txt = ','.join(select_list)
 
         where_str = self._gen_where_statements()
         ord_txt = self._gen_order_statement()
@@ -97,15 +104,6 @@ WHERE 1=1 {where_str} {gb_txt} {hv_txt} {ord_txt}"""
             possible_calcs = self.data_source[self.source]['calculations']
             calcs_dict = dict((key, d[key]) for d in possible_calcs for key in d)
             self.calculations = list(calcs_dict.keys())
-
-        # required fields
-        rqf_txt = ''
-        if self.check_key(self.data_source[self.source], 'req_fields'):
-            req_fields = self.data_source[self.source]['req_fields']
-            if req_fields is not None:
-            # remove from req fields if given fields is already in dimensions or metrics:
-                req_fields2 = [rq for rq in req_fields if (rq not in args['metrics']) & (rq != args['dimensions'])]
-                rqf_txt = ','.join(req_fields2) + ','
 
         sql_switch = {'':   self._no_aggr_select,
                       'sum': self._gb_aggr_select,

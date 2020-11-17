@@ -1,4 +1,4 @@
-
+import logging
 
 class SqlBuilder:
     '''
@@ -15,17 +15,27 @@ class SqlBuilder:
     '''
 
     def __init__(self, **kwargs):
+        logging.info(kwargs)
+        print(kwargs)
         self.metrics = kwargs['metrics'].split(';')
         self.dimensions = kwargs['dimensions'].split(';')
-        self.df_name = kwargs['source']['table']
-        self.project = kwargs['project']
-        self.schema = kwargs['schema']
-        self.possible_calcs = kwargs['source']['possible_calcs']
-        self.filters = kwargs['filters']
+        self.source = kwargs['source']
+        self.aggr_type = kwargs['aggr_type']
+
         self.add_filters = kwargs['add_filters']
+        self.filters = kwargs['filters']
         self.having = kwargs['having']
         self.show_top_n = kwargs['show_top_n']
-        self.data_sources = kwargs['data_sources']
+
+        self.data_source = kwargs['data_source']
+        self.meta_source = kwargs['meta_source']
+
+        self.project = self.meta_source['project']
+        self.file_format = self.meta_source['file_format']
+        self.schema = self.meta_source['schema']
+
+        self.df_name = None
+        self.calculations = None
 
     def _no_aggr_select(self, **args):
         select_txt = ''
@@ -60,15 +70,15 @@ WHERE 1=1 {where_str} {ord_txt}"""
             hv_txt = self._gen_having_statement(gb_txt)
 
         for nc in self.metrics:
-            if nc not in args['calcs']:
-                metric_queries.append(f"{args['aggr_type']}({nc}) AS {nc}")
+            if nc not in self.calculations:
+                metric_queries.append(f"{self.aggr_type}({nc}) AS {nc}")
 
         metrics_txt = ','.join(metric_queries)
         select_txt += metrics_txt
 
         where_str = self._gen_where_statements()
         ord_txt = self._gen_order_statement()
-        sql = f"""SELECT {select_txt} FROM {args['project']}.{args['schema']}.{args['df_name']} 
+        sql = f"""SELECT {select_txt} FROM {self.project}.{self.schema}.{self.df_name} 
 WHERE 1=1 {where_str} {gb_txt} {hv_txt} {ord_txt}"""
 
         return sql
@@ -80,38 +90,35 @@ WHERE 1=1 {where_str} {gb_txt} {hv_txt} {ord_txt}"""
 
     def make_query(self, **args):
         # read table name
-        df_name = self.data_sources[args['source']]['table']
-        args['df_name'] = df_name
+        self.df_name = self.data_source[self.source]['table']
 
         # calculations
-        if self.check_key(self.data_sources[args['source']], 'calculations'):
-            possible_calcs = self.data_sources[args['source']]['calculations']
+        if self.check_key(self.data_source[self.source], 'calculations'):
+            possible_calcs = self.data_source[self.source]['calculations']
             calcs_dict = dict((key, d[key]) for d in possible_calcs for key in d)
-            calcs = list(calcs_dict.keys())
-        else:
-            calcs = list()
+            self.calculations = list(calcs_dict.keys())
 
         # required fields
-        if self.check_key(self.data_sources[args['source']], 'req_fields'):
-            req_fields = self.data_sources[args['source']]['req_fields']
+        rqf_txt = ''
+        if self.check_key(self.data_source[self.source], 'req_fields'):
+            req_fields = self.data_source[self.source]['req_fields']
+            if req_fields is not None:
             # remove from req fields if given fields is already in dimensions or metrics:
-            req_fields2 = [rq for rq in req_fields if (rq not in args['metrics']) & (rq != args['dimensions'])]
-            rqf_txt = ','.join(req_fields2) + ','
-        else:
-            rqf_txt = ''
+                req_fields2 = [rq for rq in req_fields if (rq not in args['metrics']) & (rq != args['dimensions'])]
+                rqf_txt = ','.join(req_fields2) + ','
 
         sql_switch = {'':   self._no_aggr_select,
                       'sum': self._gb_aggr_select,
                       'mean': self._gb_aggr_select,
                       'quantiles': self._window_aggr_select}
-        sql = sql_switch[args['aggr_type']](**args)
+        sql = sql_switch[self.aggr_type](**args)
 
         return sql
 
 
     def _gen_where_statements(self):
         where_str = ''
-        for k, v in self.filters:
+        for k, v in self.filters.items():
             if k in self.add_filters:
                 if ';' in v:
                     v2 = "('" + v.replace(";", "','") + "')"
@@ -131,7 +138,7 @@ WHERE 1=1 {where_str} {gb_txt} {hv_txt} {ord_txt}"""
 
     def _gen_order_statement(self):
         ord_txt = ''
-        if (self.metrics.__len__() > 0) & (self.show_top_n > 0):
+        if (self.metrics.__len__() > 0) & (int(self.show_top_n) > 0):
             ord_txt = f" ORDER BY {self.metrics[0]} DESC LIMIT {self.show_top_n} "
         return ord_txt
 

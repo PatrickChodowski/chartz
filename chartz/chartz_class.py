@@ -10,6 +10,14 @@ css_resources = INLINE.render_css()
 resources_path = get_paths()
 setup = handle_configs(resources_path)
 
+non_filter_args = ['ds',
+                   'metrics',
+                   'dimension',
+                   'aggr_type',
+                   'show_top_n',
+                   'source',
+                   'having']
+
 if setup is None:
     print('setup not created yet')
 else:
@@ -18,13 +26,14 @@ else:
     except KeyError:
         print('Have you created settings.yaml? Try running setup_env() from chartz.utils as a first step')
 
+    print(setup)
     plots = Plots(plot_height=setup['settings']['plot_height'],
                   plot_width=setup['settings']['plot_width'],
                   f_color=setup['settings']['f_color'],
                   bg_color=setup['settings']['bg_color'],
                   add_filters=setup['add_filters'],
-                  data_sources=setup['data_sources'],
-                  source=setup['source'],
+                  data_source=setup['data_sources'],
+                  meta_source=setup['source'],
                   plot_caching=setup['plot_caching']
                   )
 
@@ -69,6 +78,10 @@ def get_settings():
 def plot(type):
     url = request.url.split('plot/')[1]
     args = request.args.to_dict()
+
+    # filter non filter args:
+    args['filters'] = {k: v for k,v in args.items() if k not in non_filter_args}
+
     if plots.check_plot_cache(url=url):
         p = plots.get_cached_plot(url=url)
         return p

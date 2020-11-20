@@ -1,16 +1,7 @@
-
 from bokeh.models import ColumnDataSource, Title
 from bokeh.plotting import figure
 from bokeh.transform import factor_cmap
-
-
-# todo: iterate by -> plot per category
-# todo: kto jest w jakim percentylu/ percentyle ogolem
-# todo: plot rozkladu
-# todo: handle operators -- czy moze wszystkie filtry jako tekst xd
-# todo: improve styling of forms
-# todo: (maybe last step ever- cleanup script.js and styles.css script) reorgenize in some logical order
-# todo: automate source creation - analyze table, get dimensions and metrics save it to yamls
+import logging
 
 
 class Plots:
@@ -34,9 +25,9 @@ class Plots:
         self.client = None
         self.bucket = None
         self.con_q = {
-                    'bigquery': self._data_bigquery,
-                    'postgresql': self._data_sql
-                }
+            'bigquery': self._data_bigquery,
+            'postgresql': self._data_sql
+        }
 
     def _handle_connection(self):
         if self.client is None:
@@ -68,7 +59,18 @@ class Plots:
 
         self._handle_connection()
         sql, metrics = self._init_sql(**params)
+
+        loggin.info('QUERY:')
+        logging.info(sql)
+
+        loggin.info('METRICS:')
+        logging.info(metrics)
+
         df = self.con_q[self.meta_source['source']](sql)
+
+        loggin.info('DATA:')
+        logging.info(df.head())
+
         return df, metrics
 
     def _connect_bigquery(self):
@@ -177,7 +179,7 @@ class Plots:
             p = self._style_plot(p)
             return p
         except Exception as e:
-           return f"<br><br> Plot error: <br> {str(e)}"
+            return f"<br><br> Plot error: <br> {str(e)}"
 
     def plot_time(self, **params):
         import math
@@ -258,7 +260,7 @@ class Plots:
                         plot_height=self.plot_height,
                         plot_width=self.plot_width)
 
-            type_sc = 'circle' #['circle','triangle','square','']
+            type_sc = 'circle'  # ['circle','triangle','square','']
             p2.scatter(x=metric1, y=metric2,
                        marker=type_sc, source=source_aggr, fill_alpha=0.5, size=12,
                        line_color=self.bg_color, fill_color=self.f_color)
@@ -404,7 +406,8 @@ class Plots:
         import os.path
         import datetime as dt
         if os.path.exists(self.plot_caching['cache_path'] + '/' + url + '.html'):
-            time_created = dt.datetime.fromtimestamp(os.path.getctime(self.plot_caching['cache_path'] + '/' + url + '.html'))
+            time_created = dt.datetime.fromtimestamp(
+                os.path.getctime(self.plot_caching['cache_path'] + '/' + url + '.html'))
             return (dt.datetime.now() - time_created).total_seconds() <= self.plot_caching['cache_time']
         else:
             return False
@@ -443,7 +446,7 @@ class Plots:
 
         if blob.exists():
             time_created = blob.time_created
-            return(dt.datetime.now() - time_created).total_seconds() <= self.plot_caching['cache_time']
+            return (dt.datetime.now() - time_created).total_seconds() <= self.plot_caching['cache_time']
         else:
             return False
 
@@ -455,7 +458,7 @@ class Plots:
         if self.plot_caching['active']:
             cache_dict = {'local': self._check_local_cache,
                           'gcpbucket': self._check_gcp_cache}
-            plot_exists =  cache_dict[self.plot_caching['cache_storage']](url)
+            plot_exists = cache_dict[self.plot_caching['cache_storage']](url)
             return plot_exists
         else:
             return False

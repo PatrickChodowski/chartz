@@ -90,10 +90,31 @@ WHERE 1=1 {where_str} {gb_txt} {hv_txt} {ord_txt}"""
 
         return sql
 
+    def _quantiles_aggr_select(self, **args):
+        select_list = list()
+        gb_txt = ''
+        metric_queries = list()
+        if (self.dimensions.__len__() > 0) & (self.dimensions != ['']):
+            dim_txt = ', '.join(self.dimensions)
+            select_list.append(dim_txt)
+            gb_txt = f' OVER(PARTITION BY {dim_txt}) '
 
-    def _window_aggr_select(self):
-        return NotImplementedError()
+        q_options = [0.10, 0.25, 0.50, 0.75, 0.90]
+        for qopt in q_options:
+            for nc in self.metrics:
+                if nc not in self.calculations:
+                    metric_queries.append(f"PERCENTILE_CONT({nc}, {qopt}) {gb_txt} AS q{str(qopt).replace('.','')}_{nc}")
 
+        metrics_txt = ','.join(metric_queries)
+        select_list.append(metrics_txt)
+        select_txt = ','.join(select_list)
+
+        where_str = self._gen_where_statements()
+        ord_txt = self._gen_order_statement()
+        sql = f"""SELECT {select_txt} FROM {self.project}.{self.schema}.{self.df_name} 
+        WHERE 1=1 {where_str} {ord_txt}"""
+
+        return sql
 
     def make_query(self, **args):
         # read table name
@@ -107,9 +128,11 @@ WHERE 1=1 {where_str} {gb_txt} {hv_txt} {ord_txt}"""
 
         sql_switch = {'':   self._no_aggr_select,
                       'sum': self._gb_aggr_select,
+                      'max': self._gb_aggr_select,
+                      'min': self._gb_aggr_select,
                       'mean': self._gb_aggr_select,
                       'count': self._gb_aggr_select,
-                      'quantiles': self._window_aggr_select}
+                      'quantiles': self._quantiles_aggr_select}
         sql = sql_switch[self.aggr_type](**args)
 
         return sql

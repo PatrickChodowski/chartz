@@ -60,15 +60,15 @@ class Plots:
         self._handle_connection()
         sql, metrics = self._init_sql(**params)
 
-        loggin.info('QUERY:')
+        logging.info('QUERY:')
         logging.info(sql)
 
-        loggin.info('METRICS:')
+        logging.info('METRICS:')
         logging.info(metrics)
 
         df = self.con_q[self.meta_source['source']](sql)
 
-        loggin.info('DATA:')
+        logging.info('DATA:')
         logging.info(df.head())
 
         return df, metrics

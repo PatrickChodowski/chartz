@@ -39,7 +39,6 @@ class SqlBuilder:
         if 'req_fields' in kwargs.keys():
             self.req_fields = kwargs['req_fields']
 
-
     def _no_aggr_select(self, **args):
         select_list = list()
 
@@ -116,6 +115,32 @@ WHERE 1=1 {where_str} {gb_txt} {hv_txt} {ord_txt}"""
 
         return sql
 
+    def _ntile_aggr_select(self, **args):
+        select_list = list()
+        gb_txt = 'OVER( '
+        metric_queries = list()
+
+        if (self.dimensions.__len__() > 0) & (self.dimensions != ['']):
+            dim_txt = ', '.join(self.dimensions)
+            select_list.append(dim_txt)
+            gb_txt = f' OVER(PARTITION BY {dim_txt}  '
+
+        for nc in self.metrics:
+            if nc not in self.calculations:
+                metric_queries.append(f"NTILE(100) {gb_txt} ORDER BY {nc} DESC) AS ntile_{nc}")
+
+        metrics_txt = ','.join(metric_queries)
+        select_list.append(metrics_txt)
+        select_txt = ','.join(select_list)
+
+        where_str = self._gen_where_statements()
+
+        sql = f"""SELECT {select_txt} FROM {self.project}.{self.schema}.{self.df_name} 
+               WHERE 1=1 {where_str} """
+
+        return sql
+
+
     def make_query(self, **args):
         # read table name
         self.df_name = self.data_source[self.source]['table']
@@ -132,7 +157,8 @@ WHERE 1=1 {where_str} {gb_txt} {hv_txt} {ord_txt}"""
                       'min': self._gb_aggr_select,
                       'mean': self._gb_aggr_select,
                       'count': self._gb_aggr_select,
-                      'quantiles': self._quantiles_aggr_select}
+                      'quantiles': self._quantiles_aggr_select,
+                      'ntile': self._ntile_aggr_select}
         sql = sql_switch[self.aggr_type](**args)
 
         return sql

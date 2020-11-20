@@ -10,32 +10,43 @@ css_resources = INLINE.render_css()
 resources_path = get_paths()
 setup = handle_configs(resources_path)
 
-try:
-    setup['settings']['plot_height']
-except KeyError:
-    print('Have you created settings.yaml? Try running setup_env() from chartz.utils as a first step')
+non_filter_args = ['ds',
+                   'metrics',
+                   'dimension',
+                   'aggr_type',
+                   'show_top_n',
+                   'source',
+                   'having']
 
-plots = Plots(plot_height=setup['settings']['plot_height'],
-              plot_width=setup['settings']['plot_width'],
-              f_color=setup['settings']['f_color'],
-              bg_color=setup['settings']['bg_color'],
-              add_filters=setup['add_filters'],
-              data_sources=setup['data_sources'],
-              source=setup['source'],
-              plot_caching=setup['plot_caching']
-              )
+if setup is None:
+    print('setup not created yet')
+else:
+    try:
+        setup['settings']['plot_height']
+    except KeyError:
+        print('Have you created settings.yaml? Try running setup_env() from chartz.utils as a first step')
+
+    plots = Plots(plot_height=setup['settings']['plot_height'],
+                  plot_width=setup['settings']['plot_width'],
+                  f_color=setup['settings']['f_color'],
+                  bg_color=setup['settings']['bg_color'],
+                  add_filters=setup['add_filters'],
+                  data_source=setup['data_sources'],
+                  meta_source=setup['source'],
+                  plot_caching=setup['plot_caching']
+                  )
+
+    plot_type_dict = {'bar':    plots.plot_bar,
+                      'points': plots.plot_points,
+                      'time':   plots.plot_time,
+                      'box':    plots.plot_box,
+                      'shot':   plots.plot_shots,
+                      'table':  plots.plot_table}
 
 chartz = Blueprint('chartz',
                     __name__,
                     template_folder=f'{resources_path}chartz_templates',
                     static_folder=f'{resources_path}chartz_static')
-
-plot_type_dict = {'bar':    plots.plot_bar,
-                  'points': plots.plot_points,
-                  'time':   plots.plot_time,
-                  'box':    plots.plot_box,
-                  'shot':   plots.plot_shots,
-                  'table':  plots.plot_table}
 
 @chartz.route('/dash', methods=['POST', 'GET'])
 def dash():
@@ -46,7 +57,14 @@ def dash():
 def get_data_sources():
     try:
         args = request.args.to_dict()
-        return setup['data_sources'][args['data_source']]
+        ds_data = setup['data_sources'][args['data_source']]
+
+        # check if any of req. keys is missing and add empty if it is
+        req_keys = ['value', 'table', 'ploys', 'dimensions', 'metrics', 'calculations', 'fixed_filters']
+        for rk in req_keys:
+            if rk not in ds_data.keys():
+                ds_data[rk] = ['']
+        return ds_data
     except KeyError as e:
         return str(e)
 
@@ -54,6 +72,7 @@ def get_data_sources():
 def get_filter_info():
     args = request.args.to_dict()
     filter_data = setup['dim_filters'][args['filter_name']]
+    filter_data['filter_name'] = args['filter_name']
     return filter_data
 
 @chartz.route('/get_settings', methods=['POST'])
@@ -65,6 +84,10 @@ def get_settings():
 def plot(type):
     url = request.url.split('plot/')[1]
     args = request.args.to_dict()
+
+    # filter non filter args:
+    args['filters'] = {k: v for k,v in args.items() if k not in non_filter_args}
+
     if plots.check_plot_cache(url=url):
         p = plots.get_cached_plot(url=url)
         return p
@@ -75,10 +98,10 @@ def plot(type):
         else:
             p_script, p_div = components(p)
             html_file = render_template('plot.html',
-                                            bokeh_js=js_resources,
-                                            bokeh_css=css_resources,
-                                            plot_script=p_script,
-                                            plot_div=p_div)
+                                        bokeh_js=js_resources,
+                                        bokeh_css=css_resources,
+                                        plot_script=p_script,
+                                        plot_div=p_div)
 
             if setup['plot_caching']['active']:
                 if setup['plot_caching']['cache_storage'] == 'local':

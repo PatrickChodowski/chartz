@@ -11,7 +11,6 @@ def handle_configs(lib_path):
         filters = read_config(f'{config_path}filters.yaml')
         settings = read_config(f'{config_path}settings.yaml')
         data_sources = read_config(f'{config_path}data_sources.yaml')
-
         main_filters = read_config(f'{lib_path}chartz_static/main_filters.yaml')
         source = settings['data_source']
         main_filters['data_source']['options'] = list()
@@ -47,22 +46,23 @@ def create_settings():
 bg_color: '#4d4d4d'
 filters_bg_color: '#007fff'
 f_color: '#7FFFD4'
-plot_height: '400px'
-plot_width: '470px'
+plot_height: 400
+plot_width: 470
 
 plot_caching: 
   active: False
   cache_storage: local #gcpbucket (possible only if you have bigquery as data source)
   cache_time: 86400
-  cache_bucket: "models_ballr" #works only if cache_storage is gcpbucket
+  cache_bucket: "bucket_name" #works only if cache_storage is gcpbucket
   cache_path: "./chartz_configs/cache"  #cache for gcpbucket
 
 data_source:
    - name: 'gbq'
      source: 'bigquery'
      project: 'project_name'
+     connection_type: 'personal_account' # 'service_account'
      schema: 'dash'
-     sa_path: 'sa_file_path.json'
+     sa_path: 'sa_file_path.json' # only if connection type is service account
      active: True
 
    - name: 'pgsql'
@@ -133,14 +133,14 @@ unique_ds_name:
     return ds_example
 
 
-def create_example_main():
+def create_example_main(parent_directory='.'):
     import os
     example_main_text = """
 from flask import Flask
 import os
 
 SECRET_KEY = os.urandom(32)
-from chartz.chartz import chartz
+from chartz import chartz
 app = Flask(__name__)
 app.config['SECRET_KEY'] = SECRET_KEY
 app.config["FLASK_DEBUG"] = 0
@@ -155,14 +155,14 @@ def index():
 if __name__ == '__main__':
    app.run(port=5001, debug=False)    
 """
-    if not os.path.exists("example_main.py"):
-        with open(f"example_main.py", "a+") as f:
+    if not os.path.exists(f"{parent_directory}/example_main.py"):
+        with open(f"{parent_directory}/example_main.py", "a+") as f:
             f.write(example_main_text)
 
 
-def setup_env(force_recreate=True):
+def setup_env(parent_directory='.', force_recreate=True):
     import os
-    dir_chartz = './chartz_configs'
+    dir_chartz = f'{parent_directory}/chartz_configs'
     function_dict = {'settings': create_settings,
                      'filters': create_filters,
                      'data_sources': create_data_sources}
@@ -190,7 +190,7 @@ def setup_env(force_recreate=True):
                 txt = function_dict[f_name]()
                 with open(f"{dir_chartz}/{file}", "a+") as f:
                     f.write(txt)
-    create_example_main()
+    create_example_main(parent_directory)
 
 
 def get_paths():

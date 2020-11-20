@@ -1,170 +1,148 @@
-
 from bokeh.models import ColumnDataSource, Title
 from bokeh.plotting import figure
 from bokeh.transform import factor_cmap
-
-
-# todo: iterate by -> plot per category
-# todo: kto jest w jakim percentylu/ percentyle ogolem
-# todo: plot rozkladu
-# todo: handle operators -- czy moze wszystkie filtry jako tekst xd
-# todo: improve styling of forms
-# todo: (maybe last step ever- cleanup script.js and styles.css script) reorgenize in some logical order
-# todo: automate source creation - analyze table, get dimensions and metrics save it to yamls
+import logging
 
 
 class Plots:
-    def __init__(self, plot_height, plot_width, f_color, bg_color, add_filters, data_sources, source, plot_caching):
+    '''
+    Plots class handles the connection to database (big_query, postgres),
+    initiates query builder class with arguments from client , sql builder send back the query and
+    it reads the data and builds the plot
+    '''
+
+    def __init__(self, plot_height, plot_width, f_color, bg_color, add_filters, data_source, meta_source, plot_caching):
         self.plot_height = plot_height
         self.plot_width = plot_width
         self.f_color = f_color
         self.bg_color = bg_color
         self.add_filters = add_filters
-        self.source = source
-        self.data_sources = data_sources
+        self.meta_source = meta_source
+        self.data_source = data_source
         self.plot_caching = plot_caching
 
         self.title_text = None
         self.client = None
         self.bucket = None
         self.con_q = {
-                    'bigquery': self._data_bigquery,
-                    'postgresql': self._data_sql
-                }
+            'bigquery': self._data_bigquery,
+            'postgresql': self._data_sql
+        }
 
-    def _handle_connection(self, **params):
+    def _handle_connection(self):
         if self.client is None:
             try:
-                assert self.source['source'] in ['bigquery', 'postgresql']
+                assert self.meta_source['source'] in ['bigquery', 'postgresql']
                 con_dict = {
                     'bigquery': self._connect_bigquery,
                     'postgresql': self._connect_postgresql
                 }
-                con_dict[self.source['source']]()
+                con_dict[self.meta_source['source']]()
             except AssertionError:
                 return 'Make sure that active source in settings is one of [bigquery. postgresql]'
         else:
             pass
 
+    @staticmethod
+    def _init_sql(**params):
+        from chartz import SqlBuilder
+        sql_builder = SqlBuilder(**params)
+        sql = sql_builder.make_query()
+        metrics = sql_builder.metrics
+        return sql, metrics
+
     def _handle_data(self, **params):
-        args = self.source
-        all_params = {**args, **params}
-        self._handle_connection(**params)
-        sql, metrics = self._make_query(**all_params)
-        df = self.con_q[self.source['source']](sql)
+
+        params['add_filters'] = self.add_filters
+        params['data_source'] = self.data_source
+        params['meta_source'] = self.meta_source
+
+        self._handle_connection()
+        sql, metrics = self._init_sql(**params)
+
+        loggin.info('QUERY:')
+        logging.info(sql)
+
+        loggin.info('METRICS:')
+        logging.info(metrics)
+
+        df = self.con_q[self.meta_source['source']](sql)
+
+        loggin.info('DATA:')
+        logging.info(df.head())
+
         return df, metrics
 
     def _connect_bigquery(self):
         from google.cloud import bigquery
         from google.oauth2 import service_account
-        credentials = service_account.Credentials.from_service_account_file(self.source['sa_path'])
-        self.client = bigquery.Client(
-            credentials=credentials,
-            project=self.source['project'],
-        )
+
+        if self.meta_source['connection_type'] == 'service_account':
+            credentials = service_account.Credentials.from_service_account_file(self.meta_source['sa_path'])
+            self.client = bigquery.Client(
+                credentials=credentials,
+                project=self.meta_source['project'],
+            )
+        elif self.meta_source['connection_type'] == 'personal_account':
+            # personal account ran from identification before
+            # gcloud auth application-default login
+            self.client = bigquery.Client(
+                project=self.meta_source['project'],
+            )
 
     def _connect_postgresql(self):
         from sqlalchemy import create_engine
-        db_string = f"postgres://{self.source['user']}:{self.source['password']}@{self.source['host']}:{self.source['port']}/{self.source['database']}"
+        db_string = f"postgres://{self.meta_source['user']}:{self.meta_source['password']}@{self.meta_source['host']}:{self.meta_source['port']}/{self.meta_source['database']}"
         self.client = create_engine(db_string)
 
     def _data_bigquery(self, sql):
-        df = self.client.query(query=sql).to_dataframe()
-        df = df.round(3)
-        if df.shape[0] == 0:
-            raise ValueError(f"""Value error: Empty dataset. Please double check query: {sql}""")
-        return df
+        try:
+            df = self.client.query(query=sql).to_dataframe()
+            df = df.round(3)
+            if df.shape[0] == 0:
+                raise Exception(f"""Empty dataset. Please double check query: {sql}""")
+
+            return df
+        except Exception as e:
+            return f"<br><br> Plot error: <br> {str(e)}"
 
     def _data_sql(self, sql):
-        import pandas as pd
-        df = pd.read_sql(sql, con=self.client)
-        df = df.round(3)
-        if df.shape[0] == 0:
-            raise ValueError(f"""Value error: Empty dataset. Please double check query: {sql}""")
-        return df
-
-    def _make_query(self, **args):
-        possible_calcs = self.data_sources[args['source']]['calculations']
-        calcs_dict = dict((key, d[key]) for d in possible_calcs for key in d)
-        calcs = list(calcs_dict.keys())
-        metrics = args['metrics'].split(';')
-        df_name = self.data_sources[args['source']]['table']
-
-        req_fields = self.data_sources[args['source']]['req_fields']
-        if req_fields is not None:
-            # remove from req fields if given fields is already in dimensions or metrics:
-            req_fields2 = [rq for rq in req_fields if (rq not in metrics) & (rq != args['dimensions'])]
-            rqf_txt = ','.join(req_fields2) + ','
-        else:
-            rqf_txt = ''
-
-        # disgusting
-        if args['aggr_type'] == '':
-            prtn_txt_1 = ''
-            prtn_txt_2 = ''
-            gb_txt = ''
-        else:
-            prtn_txt_1 = '('
-            prtn_txt_2 = ')'
-            rqf_txt = ''  # erases required columns if there is  aggregation
-            if args['dimensions'] != '':
-                gb_txt = f"GROUP BY {rqf_txt}{args['dimensions']}"
-            else:
-                gb_txt = ''
-
-        if args['dimensions'] == '':
-            cm_txt = ''
-        else:
-            cm_txt = ', '
-
-        colqs = list()
-        for nc in metrics:
-            if nc not in calcs:
-                colqs.append(f"{args['aggr_type']}{prtn_txt_1}{nc}{prtn_txt_2} AS {nc}")
-            else:
-                colqs.append(f"{calcs_dict[nc]} AS {nc}")
-        num_cols = ','.join(colqs)
-
-        sql = f"""SELECT {rqf_txt} {args['dimensions']}{cm_txt}{num_cols}
-FROM {args['project']}.{args['schema']}.{df_name} WHERE 1=1
-"""
-        for k, v in args.items():
-            if k in self.add_filters:
-                if ';' in v:
-                    v2 = "('" + v.replace(";", "','") + "')"
-                    wstr = f" AND CAST({k} AS STRING) IN {v2} "
-                else:
-                    wstr = f" AND CAST({k} AS STRING) = '{v}' "
-                sql += wstr
-            else:
-                pass
-        sql += gb_txt
-
-        if (args['having'] != '') & (gb_txt != ''):
-            sql += f" HAVING {args['having']} "
-
-        obl_txt = f" ORDER BY {metrics[0]} DESC LIMIT {args['show_top_n']} "
-        sql += obl_txt
-        print(sql)
-        return sql, metrics
+        try:
+            import pandas as pd
+            df = pd.read_sql(sql, con=self.client)
+            df = df.round(3)
+            if df.shape[0] == 0:
+                raise Exception(f"""Empty dataset. Please double check query: {sql}""")
+            return df
+        except Exception as e:
+            return f"<br><br> Plot error: <br> {str(e)}"
 
     def plot_box(self, **params):
         import math
         from statistics import median
         import numpy as np
-
-        df, metrics = self._handle_data(**params)
-        metric = metrics[0]
-
-        df[metric] = np.nan_to_num(df[metric])
-        up_limit = int(round(math.ceil(max(df[metric])) + median(df[metric].values) * 0.1))
-        down_limit = int(round(math.ceil(min(df[metric])) - median(df[metric].values) * 0.1))
-
-        if up_limit == down_limit:
-            down_limit = down_limit - 1
-
         try:
-            groups = df.groupby(params['dimensions'])
+            if ';' in params['dimensions']:
+                raise Exception(f"""Please provide max. one dimension for boxplot""")
+
+            df, metrics = self._handle_data(**params)
+            metric = metrics[0]
+
+            df[metric] = np.nan_to_num(df[metric])
+            up_limit = int(round(math.ceil(max(df[metric])) + median(df[metric].values) * 0.1))
+            down_limit = int(round(math.ceil(min(df[metric])) - median(df[metric].values) * 0.1))
+
+            if up_limit == down_limit:
+                down_limit = down_limit - 1
+
+            # for empty dimensions
+            if (params['dimensions'] != '') & (params['dimensions'] != ['']):
+                group_key_name = params['dimensions']
+            else:
+                group_key_name = 'groupkey'
+                df[group_key_name] = '1'
+
+            groups = df.groupby(group_key_name)
 
             q1 = groups[metric].quantile(q=0.25).to_frame()
             q2 = groups[metric].quantile(q=0.5).to_frame()
@@ -178,7 +156,7 @@ FROM {args['project']}.{args['schema']}.{df_name} WHERE 1=1
             q2.reset_index(inplace=True)
             q3.reset_index(inplace=True)
 
-            p = figure(x_range=upper[params['dimensions']].astype(str).unique(),
+            p = figure(x_range=upper[group_key_name].astype(str).unique(),
                        y_range=[down_limit, up_limit],
                        plot_height=self.plot_height, plot_width=self.plot_width)
 
@@ -188,23 +166,20 @@ FROM {args['project']}.{args['schema']}.{df_name} WHERE 1=1
             upper[metric] = [min([x, y]) for (x, y) in zip(qmax.loc[:, metric], upper.loc[:, metric])]
             lower[metric] = [max([x, y]) for (x, y) in zip(qmin.loc[:, metric], lower.loc[:, metric])]
 
-            p.segment(upper[params['dimensions']], upper[metric], upper[params['dimensions']], q3[metric], line_color="white")
-            p.segment(lower[params['dimensions']], lower[metric], lower[params['dimensions']], q1[metric], line_color="white")
+            p.segment(upper[group_key_name], upper[metric], upper[group_key_name], q3[metric], line_color="white")
+            p.segment(lower[group_key_name], lower[metric], lower[group_key_name], q1[metric], line_color="white")
 
-            p.vbar(q2[params['dimensions']], 0.7, q2[metric], q3[metric],
+            p.vbar(q2[group_key_name], 0.7, q2[metric], q3[metric],
                    fill_color=self.f_color, line_color="white")
-            p.vbar(q1[params['dimensions']], 0.7, q1[metric], q2[metric],
+            p.vbar(q1[group_key_name], 0.7, q1[metric], q2[metric],
                    fill_color=self.f_color, line_color="white")
 
-            p.rect(lower[params['dimensions']], lower[metric], 0.2, 0.01, line_color='white')
-            p.rect(upper[params['dimensions']], upper[metric], 0.2, 0.01, line_color='white')
+            p.rect(lower[group_key_name], lower[metric], 0.2, 0.01, line_color='white')
+            p.rect(upper[group_key_name], upper[metric], 0.2, 0.01, line_color='white')
             p = self._style_plot(p)
             return p
-        except KeyError as e:
-            if params['dimensions'] == '':
-                return 'Box chart requires grouping dimension'
-            else:
-                return str(e)
+        except Exception as e:
+            return f"<br><br> Plot error: <br> {str(e)}"
 
     def plot_time(self, **params):
         import math
@@ -226,32 +201,24 @@ FROM {args['project']}.{args['schema']}.{df_name} WHERE 1=1
             p2.xaxis.major_label_orientation = 0.9
             p2 = self._style_plot(p2)
             return p2
-        except KeyError as e:
-            if params['dimensions'] == '':
-                return 'Line chart requires grouping dimension, ideally date one'
-            else:
-                return str(e)
+        except Exception as e:
+            return f"<br><br> Plot error: <br> {str(e)}"
 
     def plot_bar(self, **params):
         import math
         from statistics import median
         try:
+            if (params['dimensions'] == '') | (';' in params['dimensions']):
+                raise Exception("Bar Chart requires exactly one dimension")
+
+            if (params['aggr_type'] == ''):
+                raise Exception("Bar Chart requires an aggregation")
+
             df, metrics = self._handle_data(**params)
             source_aggr = ColumnDataSource(df)
             metric = metrics[0]
             up_limit = int(round(math.ceil(max(df[metric])) + median(df[metric].values) * 0.1))
             df_aggr = source_aggr.data[params['dimensions']]
-        except ValueError as e:
-            return str(e)
-        except KeyError as e:
-            if params['dimensions'] == '':
-                return 'Bar chart requires grouping dimension'
-            else:
-                return str(e)
-
-        try:
-            if df[params['dimensions']].nunique() != df.shape[0]:
-                raise ValueError('Data is not aggregated. Please select aggregation type')
 
             p2 = figure(x_range=df_aggr,
                         y_range=[0, up_limit],
@@ -263,14 +230,16 @@ FROM {args['project']}.{args['schema']}.{df_name} WHERE 1=1
             p2.xaxis.major_label_orientation = 0.9
             p2.left[0].formatter.use_scientific = False
             return p2
-        except ValueError as e:
-            return str(e)
+        except Exception as e:
+            return f"<br><br> Plot error: <br> {str(e)}"
 
     def plot_points(self, **params):
         import math
         from statistics import median
-
         try:
+            if params['metrics'].split(';').__len__() != 2:
+                raise Exception("Points Chart requires exactly 2 metrics")
+
             df, metrics = self._handle_data(**params)
             metric1 = metrics[0]
             metric2 = metrics[1]
@@ -285,24 +254,13 @@ FROM {args['project']}.{args['schema']}.{df_name} WHERE 1=1
 
             if down_limit2 == up_limit2:
                 down_limit2 = down_limit2 - 1
-        except ValueError as e:
-            return str(e)
-        except IndexError as e:
-            return "Points chart requires exactly 2 metrics"
-        except KeyError as e:
-            if params['dimensions'] == '':
-                return 'Points chart requires grouping dimension'
-            else:
-                return str(e)
-        try:
-            if (params['dimensions'] == '') | (params['aggr_type'] == ''):
-                raise KeyError
+
             p2 = figure(x_range=[down_limit1, up_limit1],
                         y_range=[down_limit2, up_limit2],
                         plot_height=self.plot_height,
                         plot_width=self.plot_width)
 
-            type_sc = 'circle' #['circle','triangle','square','']
+            type_sc = 'circle'  # ['circle','triangle','square','']
             p2.scatter(x=metric1, y=metric2,
                        marker=type_sc, source=source_aggr, fill_alpha=0.5, size=12,
                        line_color=self.bg_color, fill_color=self.f_color)
@@ -316,10 +274,9 @@ FROM {args['project']}.{args['schema']}.{df_name} WHERE 1=1
                     text_align="center", text_font_size="10pt")
 
             p2 = self._style_plot(p2)
-        except KeyError as e:
-            return 'Points chart requires grouping dimension and aggregation'
-
-        return p2
+            return p2
+        except Exception as e:
+            return f"<br><br> Plot error: <br> {str(e)}"
 
     def plot_table(self, **params):
         from bokeh.models.widgets import DataTable, TableColumn
@@ -341,8 +298,12 @@ FROM {args['project']}.{args['schema']}.{df_name} WHERE 1=1
 
     def plot_shots(self, **params):
         try:
+            if (params['aggr_type'] != ''):
+                raise Exception("Shot Chart cant have an aggregation")
+
+            params['req_fields'] = 'loc_y,loc_x,shot_made_flag'
             df, metrics = self._handle_data(**params)
-            df['made'] = df['made'].astype('str')
+
             source = ColumnDataSource(df)
             p2 = figure(width=470, height=460,
                         x_range=[-250, 250],
@@ -362,12 +323,9 @@ FROM {args['project']}.{args['schema']}.{df_name} WHERE 1=1
 
             self._draw_court(p2, line_width=1)
             p2 = self._style_plot(p2)
-        except KeyError as e:
-            if params['aggr_type'] != '':
-                return "Shotchart wont work with nonempty aggregation"
-            else:
-                return e
-        return p2
+            return p2
+        except Exception as e:
+            return f"<br><br> Plot error: <br> {str(e)}"
 
     def _style_plot(self, p):
         p.toolbar.logo = None
@@ -448,7 +406,8 @@ FROM {args['project']}.{args['schema']}.{df_name} WHERE 1=1
         import os.path
         import datetime as dt
         if os.path.exists(self.plot_caching['cache_path'] + '/' + url + '.html'):
-            time_created = dt.datetime.fromtimestamp(os.path.getctime(self.plot_caching['cache_path'] + '/' + url + '.html'))
+            time_created = dt.datetime.fromtimestamp(
+                os.path.getctime(self.plot_caching['cache_path'] + '/' + url + '.html'))
             return (dt.datetime.now() - time_created).total_seconds() <= self.plot_caching['cache_time']
         else:
             return False
@@ -459,11 +418,20 @@ FROM {args['project']}.{args['schema']}.{df_name} WHERE 1=1
         '''
         from google.oauth2 import service_account
         from google.cloud import storage
-        credentials = service_account.Credentials.from_service_account_file(self.source['sa_path'])
-        bucket_client = storage.Client(
-            credentials=credentials,
-            project=self.source['project'],
-        )
+
+        if self.meta_source['connection_type'] == 'service_account':
+            credentials = service_account.Credentials.from_service_account_file(self.meta_source['sa_path'])
+            bucket_client = storage.Client(
+                credentials=credentials,
+                project=self.meta_source['project'],
+            )
+        elif self.meta_source['connection_type'] == 'personal_account':
+            # personal account ran from identification before
+            # gcloud auth application-default login
+            bucket_client = storage.Client(
+                project=self.meta_source['project'],
+            )
+
         self.bucket = bucket_client.get_bucket(self.plot_caching['cache_bucket'])
 
     def _check_gcp_cache(self, url):
@@ -478,7 +446,7 @@ FROM {args['project']}.{args['schema']}.{df_name} WHERE 1=1
 
         if blob.exists():
             time_created = blob.time_created
-            return(dt.datetime.now() - time_created).total_seconds() <= self.plot_caching['cache_time']
+            return (dt.datetime.now() - time_created).total_seconds() <= self.plot_caching['cache_time']
         else:
             return False
 
@@ -490,7 +458,7 @@ FROM {args['project']}.{args['schema']}.{df_name} WHERE 1=1
         if self.plot_caching['active']:
             cache_dict = {'local': self._check_local_cache,
                           'gcpbucket': self._check_gcp_cache}
-            plot_exists =  cache_dict[self.plot_caching['cache_storage']](url)
+            plot_exists = cache_dict[self.plot_caching['cache_storage']](url)
             return plot_exists
         else:
             return False
@@ -514,3 +482,4 @@ FROM {args['project']}.{args['schema']}.{df_name} WHERE 1=1
         blob = self.bucket.blob(path)
         p = blob.download_as_string()
         return p
+

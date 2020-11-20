@@ -22,7 +22,7 @@ metrics:
 dimensions:
   value: 'dimensions'
   name: 'Dimensions'
-  type: 'select'
+  type: 'choices'
   options:
     - name: ''
       value: ''
@@ -39,6 +39,8 @@ aggr_type:
       value: 'sum'
     - name: 'Count'
       value: 'count'
+    - name: 'Quantiles'
+      value: 'quantiles'
 show_top_n:
   value: 'show_top_n'
   name: 'SHOW TOP N'

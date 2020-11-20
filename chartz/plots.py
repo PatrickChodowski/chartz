@@ -119,19 +119,28 @@ class Plots:
         import math
         from statistics import median
         import numpy as np
-
-        df, metrics = self._handle_data(**params)
-        metric = metrics[0]
-
-        df[metric] = np.nan_to_num(df[metric])
-        up_limit = int(round(math.ceil(max(df[metric])) + median(df[metric].values) * 0.1))
-        down_limit = int(round(math.ceil(min(df[metric])) - median(df[metric].values) * 0.1))
-
-        if up_limit == down_limit:
-            down_limit = down_limit - 1
-
         try:
-            groups = df.groupby(params['dimensions'])
+            if ';' in params['dimensions']:
+                raise Exception(f"""Please provide max. one dimension for boxplot""")
+
+            df, metrics = self._handle_data(**params)
+            metric = metrics[0]
+
+            df[metric] = np.nan_to_num(df[metric])
+            up_limit = int(round(math.ceil(max(df[metric])) + median(df[metric].values) * 0.1))
+            down_limit = int(round(math.ceil(min(df[metric])) - median(df[metric].values) * 0.1))
+
+            if up_limit == down_limit:
+                down_limit = down_limit - 1
+
+            # for empty dimensions
+            if (params['dimensions'] != '') & (params['dimensions'] != ['']):
+                group_key_name = params['dimensions']
+            else:
+                group_key_name = 'groupkey'
+                df[group_key_name] = '1'
+
+            groups = df.groupby(group_key_name)
 
             q1 = groups[metric].quantile(q=0.25).to_frame()
             q2 = groups[metric].quantile(q=0.5).to_frame()
@@ -145,7 +154,7 @@ class Plots:
             q2.reset_index(inplace=True)
             q3.reset_index(inplace=True)
 
-            p = figure(x_range=upper[params['dimensions']].astype(str).unique(),
+            p = figure(x_range=upper[group_key_name].astype(str).unique(),
                        y_range=[down_limit, up_limit],
                        plot_height=self.plot_height, plot_width=self.plot_width)
 
@@ -155,23 +164,20 @@ class Plots:
             upper[metric] = [min([x, y]) for (x, y) in zip(qmax.loc[:, metric], upper.loc[:, metric])]
             lower[metric] = [max([x, y]) for (x, y) in zip(qmin.loc[:, metric], lower.loc[:, metric])]
 
-            p.segment(upper[params['dimensions']], upper[metric], upper[params['dimensions']], q3[metric], line_color="white")
-            p.segment(lower[params['dimensions']], lower[metric], lower[params['dimensions']], q1[metric], line_color="white")
+            p.segment(upper[group_key_name], upper[metric], upper[group_key_name], q3[metric], line_color="white")
+            p.segment(lower[group_key_name], lower[metric], lower[group_key_name], q1[metric], line_color="white")
 
-            p.vbar(q2[params['dimensions']], 0.7, q2[metric], q3[metric],
+            p.vbar(q2[group_key_name], 0.7, q2[metric], q3[metric],
                    fill_color=self.f_color, line_color="white")
-            p.vbar(q1[params['dimensions']], 0.7, q1[metric], q2[metric],
+            p.vbar(q1[group_key_name], 0.7, q1[metric], q2[metric],
                    fill_color=self.f_color, line_color="white")
 
-            p.rect(lower[params['dimensions']], lower[metric], 0.2, 0.01, line_color='white')
-            p.rect(upper[params['dimensions']], upper[metric], 0.2, 0.01, line_color='white')
+            p.rect(lower[group_key_name], lower[metric], 0.2, 0.01, line_color='white')
+            p.rect(upper[group_key_name], upper[metric], 0.2, 0.01, line_color='white')
             p = self._style_plot(p)
             return p
-        except KeyError as e:
-            if params['dimensions'] == '':
-                return 'Box chart requires grouping dimension'
-            else:
-                return str(e)
+        except Exception as e:
+           return f"<br><br> Plot error: <br> {str(e)}"
 
     def plot_time(self, **params):
         import math
@@ -193,11 +199,8 @@ class Plots:
             p2.xaxis.major_label_orientation = 0.9
             p2 = self._style_plot(p2)
             return p2
-        except KeyError as e:
-            if params['dimensions'] == '':
-                return 'Line chart requires grouping dimension, ideally date one'
-            else:
-                return str(e)
+        except Exception as e:
+            return f"<br><br> Plot error: <br> {str(e)}"
 
     def plot_bar(self, **params):
         import math

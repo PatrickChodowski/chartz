@@ -108,6 +108,7 @@ WHERE 1=1 {where_str} {gb_txt} {hv_txt} {ord_txt}"""
         sql_switch = {'':   self._no_aggr_select,
                       'sum': self._gb_aggr_select,
                       'mean': self._gb_aggr_select,
+                      'count': self._gb_aggr_select,
                       'quantiles': self._window_aggr_select}
         sql = sql_switch[self.aggr_type](**args)
 

@@ -57,7 +57,14 @@ def dash():
 def get_data_sources():
     try:
         args = request.args.to_dict()
-        return setup['data_sources'][args['data_source']]
+        ds_data = setup['data_sources'][args['data_source']]
+
+        # check if any of req. keys is missing and add empty if it is
+        req_keys = ['value', 'table', 'ploys', 'dimensions', 'metrics', 'calculations', 'fixed_filters']
+        for rk in req_keys:
+            if rk not in ds_data.keys():
+                ds_data[rk] = ['']
+        return ds_data
     except KeyError as e:
         return str(e)
 

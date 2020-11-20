@@ -76,7 +76,7 @@ WHERE 1=1 {where_str} {ord_txt}"""
 
         for nc in self.metrics:
             if nc not in self.calculations:
-                metric_queries.append(f"{self.aggr_type}({nc}) AS {nc}")
+                metric_queries.append(f"{self.aggr_type.replace('ntile_','')}({nc}) AS {nc}")
 
         metrics_txt = ','.join(metric_queries)
         select_list.append(metrics_txt)
@@ -140,6 +140,31 @@ WHERE 1=1 {where_str} {gb_txt} {hv_txt} {ord_txt}"""
 
         return sql
 
+    def _ntile_over_aggr_select(self, **args):
+        #'ntile_avg' 'ntile_sum' 'ntile_min' 'ntile_max'
+        select_list = list()
+        metric_queries = list()
+        # thats basically a first subquery to get average per dimension:
+
+        if (self.dimensions.__len__() > 0) & (self.dimensions != ['']):
+            dim_txt = ', '.join(self.dimensions)
+            select_list.append(dim_txt)
+
+        for nc in self.metrics:
+            metric_queries.append(f"NTILE(100) OVER ( ORDER BY {nc} DESC ) AS ntile_{nc}")
+
+        metrics_txt = ','.join(metric_queries)
+        select_list.append(metrics_txt)
+        select_txt = ','.join(select_list)
+
+        sql0 = self._gb_aggr_select()
+
+        sql = f"""SELECT {select_txt}
+FROM ({sql0}) a"""
+
+
+        return sql
+
 
     def make_query(self, **args):
         # read table name
@@ -158,7 +183,11 @@ WHERE 1=1 {where_str} {gb_txt} {hv_txt} {ord_txt}"""
                       'mean': self._gb_aggr_select,
                       'count': self._gb_aggr_select,
                       'quantiles': self._quantiles_aggr_select,
-                      'ntile': self._ntile_aggr_select}
+                      'ntile': self._ntile_aggr_select,
+                      'ntile_avg': self._ntile_over_aggr_select,
+                      'ntile_sum': self._ntile_over_aggr_select,
+                      'ntile_min': self._ntile_over_aggr_select,
+                      'ntile_max': self._ntile_over_aggr_select}
         sql = sql_switch[self.aggr_type](**args)
 
         return sql

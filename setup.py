@@ -16,7 +16,7 @@ setup(
                               'chartz_static/bootstrap/js/*.map']},
     install_requires=['flask', 'bokeh', 'google-cloud-bigquery', 'google-cloud-storage', 'pandas', 'pyyaml', 'sqlalchemy', 'pyarrow'],
     # *strongly* suggested for sharing
-    version='0.5.2',
+    version='0.5.6',
     license='GPLv3',
     description='Flask module allowing to build dashboards for data defined in single yml files',
     long_description=open('README.md').read(),

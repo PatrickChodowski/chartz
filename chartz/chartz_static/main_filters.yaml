@@ -45,6 +45,8 @@ aggr_type:
       value: 'count'
     - name: 'Quantiles'
       value: 'quantiles'
+    - name: 'Percentile'
+      value: 'ntile'
 show_top_n:
   value: 'show_top_n'
   name: 'SHOW TOP N'

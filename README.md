@@ -56,7 +56,6 @@ Go ahead and save your plots as a view. You will be able to load it later from s
  
  - Allowing users to easily add plots (Plot is basically a function that receives data as input and results in HTML object like Bokeh plot)
  - Automatic iteration by category
- - Automatic creation of .yml table descriptions
  - Improve styling/UI
  - Improve JS code (I am not a JS guy at all, I am learning it right now on as I go. If you like this package and you can write nice JS then please reach out. There are jQuery dependencies that I am not able to tackle, help)
  - Handle different operators (I really should have done it before but meh)

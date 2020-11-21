@@ -198,3 +198,40 @@ def get_paths():
     resources_path0 = importlib.import_module('chartz.chartz_templates')
     resources_path = str(resources_path0.__path__).replace("_NamespacePath(['", '').replace("chartz_templates'])", '')
     return resources_path
+
+
+def make_table_yml(table_unique_name, client, project, dataset, table, limit=10000, unique_values=3):
+
+    # get data
+    sql_meta = f""" SELECT * FROM `{project}.{dataset}.{table}` limit {limit} """
+    df = client.query(query=sql_meta).to_dataframe()
+
+    # get object/bool
+    possible_dimensions = df.select_dtypes(include=['object', 'bool', 'category', 'datetime64']).columns.to_list()
+
+    # get numerics
+    possible_metrics = df.select_dtypes(include=['number', 'integer']).columns.to_list()
+
+    # find possible dimensions in numerical (limited amount of values)
+    possible_num_dims = list()
+    for col in df[possible_metrics]:
+        if df[col].nunique() <= unique_values:
+            possible_num_dims.append(col)
+
+    possible_dimensions += possible_num_dims
+
+    # create file
+    table_meta = dict()
+    table_meta[table_unique_name] = dict()
+    table_meta[table_unique_name]['value'] = table_unique_name
+    table_meta[table_unique_name]['table'] = table
+    table_meta[table_unique_name]['plots'] = ['bar', 'points', 'time', 'box', 'table']
+    table_meta[table_unique_name]['dimensions'] = [''] + possible_dimensions
+    table_meta[table_unique_name]['metrics'] = possible_metrics
+    table_meta[table_unique_name]['calculations'] = ['']
+    table_meta[table_unique_name]['fixed_filters'] = ['']
+
+    import yaml
+    with open(f'{table_unique_name}.yaml', 'w') as file:
+        table_meta_yml = yaml.dump(table_meta, file)
+

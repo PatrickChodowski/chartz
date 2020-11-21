@@ -37,15 +37,30 @@ aggr_type:
       value: 'avg'
     - name: 'Sum'
       value: 'sum'
+    - name: 'Max'
+      value: 'max'
+    - name: 'Min'
+      value: 'min'
     - name: 'Count'
       value: 'count'
     - name: 'Quantiles'
       value: 'quantiles'
+    - name: 'Percentile'
+      value: 'ntile'
+    - name: 'Percentile over avg'
+      value: 'ntile_avg'
+    - name: 'Percentile over sum'
+      value: 'ntile_sum'
+    - name: 'Percentile over min'
+      value: 'ntile_min'
+    - name: 'Percentile over max'
+      value: 'ntile_max'
+
 show_top_n:
   value: 'show_top_n'
   name: 'SHOW TOP N'
   type: 'number'
   options:
      min: 1
-     max: 500
+     max: 50000
      default: 450

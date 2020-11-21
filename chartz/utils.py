@@ -208,7 +208,7 @@ def make_table_yml(table_unique_name, client, project, dataset, table, limit=100
 
     # get object/bool
     possible_dimensions = df.select_dtypes(include=['object', 'bool', 'category', 'datetime64']).columns.to_list()
-
+    create_filters(df, possible_dimensions)
     # get numerics
     possible_metrics = df.select_dtypes(include=['number', 'integer']).columns.to_list()
 
@@ -235,3 +235,35 @@ def make_table_yml(table_unique_name, client, project, dataset, table, limit=100
     with open(f'{table_unique_name}.yaml', 'w') as file:
         table_meta_yml = yaml.dump(table_meta, file)
 
+
+def create_filters(df, possible_dimensions):
+    filters_list = list()
+
+    for col in possible_dimensions:
+        filter_dict = dict()
+        filter_dict[col] = dict()
+
+        col_options = list(df[col].unique())
+
+        filter_dict[col]['name'] = col
+        filter_dict[col]['value'] = col
+        filter_dict[col]['operators'] = ['eq']
+        filter_dict[col]['duplicable'] = False
+
+        # possible types: choices, checkbox, number, select
+        # define the type smart way (depends on the options len)
+
+        if col_options.__len__() <= 4:
+            dim_type = 'checkbox'
+        else:
+            dim_type = 'choices'
+
+        filter_dict[col]['type'] = dim_type
+        filter_dict[col]['options'] = col_options
+
+        # add to list
+        filters_list.append(filter_dict)
+
+        import yaml
+        with open(f'filters_temp.yaml', 'w') as file:
+            table_meta_yml = yaml.dump(filters_list, file, allow_unicode=True)

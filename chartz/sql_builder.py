@@ -1,4 +1,3 @@
-import logging
 
 class SqlBuilder:
     '''
@@ -34,6 +33,7 @@ class SqlBuilder:
 
         self.df_name = None
         self.calculations = None
+        self.calculations_full = None
 
         self.req_fields = None
         if 'req_fields' in kwargs.keys():
@@ -41,29 +41,44 @@ class SqlBuilder:
 
     def _no_aggr_select(self, **args):
         select_list = list()
+        calc_list = list()
+        metric_list = list()
 
         if (self.dimensions.__len__() > 0) & (self.dimensions != ['']):
             dim_txt = ', '.join(self.dimensions)
             select_list.append(dim_txt)
 
-        if (self.dimensions.__len__() > 0) & (self.metrics != ['']):
-            metrics_txt = ', '.join(self.metrics)
+        if (self.metrics.__len__() > 0) & (self.metrics != ['']):
+            for metric in self.metrics:
+                if metric in self.calculations:
+                    calc_list.append(f" {self.calculations_full[metric]} AS {metric} ")
+                else:
+                    metric_list.append(metric)
+
+            metrics_txt = ', '.join(metric_list)
+            calcs_txt = ', '.join(calc_list)
+
             select_list.append(metrics_txt)
+            select_list.append(calcs_txt)
 
         # required fields
-        if self.req_fields is not None:
+        if (self.req_fields is not None) & (self.req_fields != ['']):
             select_list.append(self.req_fields)
 
         where_str = self._gen_where_statements()
         ord_txt = self._gen_order_statement()
 
+        select_list = [txt for txt in select_list if txt != '']
         select_txt = ','.join(select_list)
+
         sql = f"""SELECT {select_txt} FROM {self.project}.{self.schema}.{self.df_name} 
 WHERE 1=1 {where_str} {ord_txt}"""
         return sql
 
     def _gb_aggr_select(self, **args):
         select_list = list()
+        calc_list = list()
+        metric_list = list()
         gb_txt = ''
         metric_queries = list()
         hv_txt = ''
@@ -74,12 +89,19 @@ WHERE 1=1 {where_str} {ord_txt}"""
             gb_txt = f'GROUP BY {dim_txt}'
             hv_txt = self._gen_having_statement(gb_txt)
 
-        for nc in self.metrics:
-            if nc not in self.calculations:
-                metric_queries.append(f"{self.aggr_type.replace('ntile_','')}({nc}) AS {nc}")
+        for metric in self.metrics:
+            if metric not in self.calculations:
+                metric_queries.append(f"{self.aggr_type.replace('ntile_','')}({metric}) AS {metric}")
+            else:
+                calc_list.append(f" {self.calculations_full[metric]} AS {metric} ")
 
         metrics_txt = ','.join(metric_queries)
         select_list.append(metrics_txt)
+
+        calcs_txt = ', '.join(calc_list)
+        select_list.append(calcs_txt)
+
+        select_list = [txt for txt in select_list if txt != '']
         select_txt = ','.join(select_list)
 
         where_str = self._gen_where_statements()
@@ -110,8 +132,8 @@ WHERE 1=1 {where_str} {gb_txt} {hv_txt} {ord_txt}"""
 
         where_str = self._gen_where_statements()
         ord_txt = self._gen_order_statement()
-        sql = f"""SELECT {select_txt} FROM {self.project}.{self.schema}.{self.df_name} 
-        WHERE 1=1 {where_str} {ord_txt}"""
+        sql = f"""SELECT DISTINCT {select_txt} FROM {self.project}.{self.schema}.{self.df_name} 
+        WHERE 1=1 {where_str} """
 
         return sql
 
@@ -175,12 +197,15 @@ FROM ({sql0}) a"""
             possible_calcs = self.data_source[self.source]['calculations']
             calcs_dict = dict((key, d[key]) for d in possible_calcs for key in d)
             self.calculations = list(calcs_dict.keys())
+            self.calculations_full = calcs_dict
+
+        #if self.metrics
 
         sql_switch = {'':   self._no_aggr_select,
                       'sum': self._gb_aggr_select,
                       'max': self._gb_aggr_select,
                       'min': self._gb_aggr_select,
-                      'mean': self._gb_aggr_select,
+                      'avg': self._gb_aggr_select,
                       'count': self._gb_aggr_select,
                       'quantiles': self._quantiles_aggr_select,
                       'ntile': self._ntile_aggr_select,

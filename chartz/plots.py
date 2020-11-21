@@ -60,16 +60,15 @@ class Plots:
         self._handle_connection()
         sql, metrics = self._init_sql(**params)
 
-        logging.info('QUERY:')
-        logging.info(sql)
+        print('QUERY:')
+        print(sql)
 
-        logging.info('METRICS:')
-        logging.info(metrics)
+        print('METRICS:')
+        print(metrics)
 
         df = self.con_q[self.meta_source['source']](sql)
-
-        logging.info('DATA:')
-        logging.info(df.head())
+        print('DATA:')
+        print(df.head())
 
         return df, metrics
 
@@ -303,7 +302,7 @@ class Plots:
 
             params['req_fields'] = 'loc_y,loc_x,shot_made_flag'
             df, metrics = self._handle_data(**params)
-
+            df['shot_made_flag'] = df['shot_made_flag'].astype(str)
             source = ColumnDataSource(df)
             p2 = figure(width=470, height=460,
                         x_range=[-250, 250],
@@ -313,7 +312,7 @@ class Plots:
                         y_axis_type=None,
                         outline_line_color=self.bg_color)
 
-            colors = factor_cmap('made', palette=['green', 'red'], factors=['1', '0'])
+            colors = factor_cmap('shot_made_flag', palette=['green', 'red'], factors=['1', '0'])
             p2.scatter(x="loc_x", y="loc_y",
                        source=source,
                        size=10,
@@ -323,6 +322,7 @@ class Plots:
 
             self._draw_court(p2, line_width=1)
             p2 = self._style_plot(p2)
+
             return p2
         except Exception as e:
             return f"<br><br> Plot error: <br> {str(e)}"

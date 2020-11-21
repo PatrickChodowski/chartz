@@ -190,32 +190,37 @@ FROM ({sql0}) a"""
 
     def make_query(self, **args):
         # read table name
-        self.df_name = self.data_source[self.source]['table']
+        try:
+            self.df_name = self.data_source[self.source]['table']
 
-        # calculations
-        if self.check_key(self.data_source[self.source], 'calculations'):
-            possible_calcs = self.data_source[self.source]['calculations']
-            calcs_dict = dict((key, d[key]) for d in possible_calcs for key in d)
-            self.calculations = list(calcs_dict.keys())
-            self.calculations_full = calcs_dict
+            # calculations
+            if self.check_key(self.data_source[self.source], 'calculations'):
+                possible_calcs = self.data_source[self.source]['calculations']
+                calcs_dict = dict((key, d[key]) for d in possible_calcs for key in d)
+                self.calculations = list(calcs_dict.keys())
+                self.calculations_full = calcs_dict
 
-        #if self.metrics
+            #  when there is un-aggregated metric and aggregated calc
+            if (any(m in self.calculations for m in self.metrics)) & (self.aggr_type == '') & (any(m not in self.calculations for m in self.metrics)):
+                raise Exception('IF there is a metric and calculation, there has to be nonempty aggregation selected')
 
-        sql_switch = {'':   self._no_aggr_select,
-                      'sum': self._gb_aggr_select,
-                      'max': self._gb_aggr_select,
-                      'min': self._gb_aggr_select,
-                      'avg': self._gb_aggr_select,
-                      'count': self._gb_aggr_select,
-                      'quantiles': self._quantiles_aggr_select,
-                      'ntile': self._ntile_aggr_select,
-                      'ntile_avg': self._ntile_over_aggr_select,
-                      'ntile_sum': self._ntile_over_aggr_select,
-                      'ntile_min': self._ntile_over_aggr_select,
-                      'ntile_max': self._ntile_over_aggr_select}
-        sql = sql_switch[self.aggr_type](**args)
+            sql_switch = {'':   self._no_aggr_select,
+                          'sum': self._gb_aggr_select,
+                          'max': self._gb_aggr_select,
+                          'min': self._gb_aggr_select,
+                          'avg': self._gb_aggr_select,
+                          'count': self._gb_aggr_select,
+                          'quantiles': self._quantiles_aggr_select,
+                          'ntile': self._ntile_aggr_select,
+                          'ntile_avg': self._ntile_over_aggr_select,
+                          'ntile_sum': self._ntile_over_aggr_select,
+                          'ntile_min': self._ntile_over_aggr_select,
+                          'ntile_max': self._ntile_over_aggr_select}
+            sql = sql_switch[self.aggr_type](**args)
+            return sql
+        except Exception as e:
+            raise
 
-        return sql
 
 
     def _gen_where_statements(self):

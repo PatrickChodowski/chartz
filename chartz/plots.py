@@ -45,32 +45,37 @@ class Plots:
 
     @staticmethod
     def _init_sql(**params):
-        from chartz import SqlBuilder
-        sql_builder = SqlBuilder(**params)
-        sql = sql_builder.make_query()
-        metrics = sql_builder.metrics
-        return sql, metrics
+        try:
+            from chartz import SqlBuilder
+            sql_builder = SqlBuilder(**params)
+            sql = sql_builder.make_query()
+            metrics = sql_builder.metrics
+            return sql, metrics
+        except Exception as e:
+            raise
 
     def _handle_data(self, **params):
+        try:
+            params['add_filters'] = self.add_filters
+            params['data_source'] = self.data_source
+            params['meta_source'] = self.meta_source
 
-        params['add_filters'] = self.add_filters
-        params['data_source'] = self.data_source
-        params['meta_source'] = self.meta_source
+            self._handle_connection()
+            sql, metrics = self._init_sql(**params)
 
-        self._handle_connection()
-        sql, metrics = self._init_sql(**params)
+            print('QUERY:')
+            print(sql)
 
-        print('QUERY:')
-        print(sql)
+            print('METRICS:')
+            print(metrics)
 
-        print('METRICS:')
-        print(metrics)
+            df = self.con_q[self.meta_source['source']](sql)
+            print('DATA:')
+            print(df.head())
 
-        df = self.con_q[self.meta_source['source']](sql)
-        print('DATA:')
-        print(df.head())
-
-        return df, metrics
+            return df, metrics
+        except Exception as e:
+            raise
 
     def _connect_bigquery(self):
         from google.cloud import bigquery
@@ -278,22 +283,25 @@ class Plots:
             return f"<br><br> Plot error: <br> {str(e)}"
 
     def plot_table(self, **params):
-        from bokeh.models.widgets import DataTable, TableColumn
-        df, metrics = self._handle_data(**params)
+        try:
+            from bokeh.models.widgets import DataTable, TableColumn
+            df, metrics = self._handle_data(**params)
 
-        columns = list()
-        for col in df.columns.to_list():
-            columns.append(TableColumn(field=col, title=col))
-        source = ColumnDataSource(df)
-        p2 = DataTable(columns=columns,
-                       source=source,
-                       fit_columns=True,
-                       max_height=(self.plot_height - 20),
-                       max_width=(self.plot_width - 40),
-                       index_width=0)
-        p2.width = (self.plot_width - 30)
-        p2.height = (self.plot_height - 20)
-        return p2
+            columns = list()
+            for col in df.columns.to_list():
+                columns.append(TableColumn(field=col, title=col))
+            source = ColumnDataSource(df)
+            p2 = DataTable(columns=columns,
+                           source=source,
+                           fit_columns=True,
+                           max_height=(self.plot_height - 20),
+                           max_width=(self.plot_width - 40),
+                           index_width=0)
+            p2.width = (self.plot_width - 30)
+            p2.height = (self.plot_height - 20)
+            return p2
+        except Exception as e:
+            return f"<br><br> Plot error: <br> {str(e)}"
 
     def plot_shots(self, **params):
         try:

@@ -51,12 +51,9 @@ Go ahead and save your plots as a view. You will be able to load it later from s
 ### Non features:
  - Although its bootstrap based, I am not taking any responsibility for mobile version (Why would you run your data analysis on mobile you sick bastard)
  - Plot types can't be added without going into package code... yet
- - Handles only 3 aggregation types for now
- 
- 
+  
 ### To do list:
  
- - Handling more aggregation, especially percentiles
  - Allowing users to easily add plots (Plot is basically a function that receives data as input and results in HTML object like Bokeh plot)
  - Automatic iteration by category
  - Automatic creation of .yml table descriptions

@@ -114,7 +114,7 @@ WHERE 1=1 {where_str} {gb_txt} {hv_txt} {ord_txt}"""
 
     def _quantiles_aggr_select(self, **args):
         select_list = list()
-        gb_txt = ''
+        gb_txt = ' OVER () '
         metric_queries = list()
         if (self.dimensions.__len__() > 0) & (self.dimensions != ['']):
             dim_txt = ', '.join(self.dimensions)

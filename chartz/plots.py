@@ -71,9 +71,8 @@ class Plots:
 
     def _handle_data(self, **params):
         '''
-        --1) Generates connection to db
-        2) creates sql query
-        3) Sends query to df and retrieves data
+        1) creates sql query
+        2) Sends query to df and retrieves data
         returns df, list of metrics
         '''
         try:
@@ -81,7 +80,6 @@ class Plots:
             params['data_source'] = self.data_source
             params['current_db_source'] = self.current_db_source
 
-            #self._create_connection()
             sql, metrics = self._build_sql(**params)
 
             print('QUERY:')

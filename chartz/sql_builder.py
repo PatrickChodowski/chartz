@@ -15,8 +15,6 @@ class SqlBuilder:
 
     def __init__(self, **kwargs):
 
-        print(kwargs)
-
         self.metrics = kwargs['metrics'].split(';')
         self.dimensions = kwargs['dimensions'].split(';')
         self.source = kwargs['source']

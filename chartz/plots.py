@@ -11,40 +11,55 @@ class Plots:
     it reads the data and builds the plot
     '''
 
-    def __init__(self, plot_height, plot_width, f_color, bg_color, add_filters, data_source, meta_source, plot_caching):
+    def __init__(self, plot_height, plot_width, f_color, bg_color, add_filters, data_source, db_source, plot_caching):
         self.plot_height = plot_height
         self.plot_width = plot_width
         self.f_color = f_color
         self.bg_color = bg_color
         self.add_filters = add_filters
-        self.meta_source = meta_source
+        self.db_source = db_source
         self.data_source = data_source
         self.plot_caching = plot_caching
 
         self.title_text = None
         self.client = None
         self.bucket = None
+        self.query_source = None
+        self.current_db_source = None
+
+
         self.con_q = {
             'bigquery': self._data_bigquery,
             'postgresql': self._data_sql
         }
 
-    def _handle_connection(self):
-        if self.client is None:
-            try:
-                assert self.meta_source['source'] in ['bigquery', 'postgresql']
-                con_dict = {
-                    'bigquery': self._connect_bigquery,
-                    'postgresql': self._connect_postgresql
-                }
-                con_dict[self.meta_source['source']]()
-            except AssertionError:
-                return 'Make sure that active source in settings is one of [bigquery. postgresql]'
-        else:
-            pass
+    def _create_connection(self, query_source):
+        '''
+        1) It creates connection based on query_source argument
+        param query_source come from data_sources.yaml and is specified for each table
+        It should have the equivalent in settings[db_source]
+        '''
+        # which db_source for query_source:
+        self.current_db_source = [d for d in self.db_source if d['name'] == query_source][0]
+        self.query_source = query_source
+        try:
+            assert self.current_db_source['source'] in ['bigquery', 'postgresql']
+            con_dict = {
+                'bigquery': self._connect_bigquery,
+                'postgresql': self._connect_postgresql
+            }
+            con_dict[self.current_db_source['source']]()
+        except AssertionError:
+            return 'Make sure that active source in settings is one of [bigquery. postgresql]'
+
 
     @staticmethod
-    def _init_sql(**params):
+    def _build_sql(**params):
+        '''
+        1) Creates SQLBuilder instance with parameters
+        2) Calls make_query method
+        returns query text and metrics list
+        '''
         try:
             from chartz import SqlBuilder
             sql_builder = SqlBuilder(**params)
@@ -55,13 +70,19 @@ class Plots:
             raise
 
     def _handle_data(self, **params):
+        '''
+        --1) Generates connection to db
+        2) creates sql query
+        3) Sends query to df and retrieves data
+        returns df, list of metrics
+        '''
         try:
             params['add_filters'] = self.add_filters
             params['data_source'] = self.data_source
-            params['meta_source'] = self.meta_source
+            params['current_db_source'] = self.current_db_source
 
-            self._handle_connection()
-            sql, metrics = self._init_sql(**params)
+            #self._create_connection()
+            sql, metrics = self._build_sql(**params)
 
             print('QUERY:')
             print(sql)
@@ -69,7 +90,7 @@ class Plots:
             print('METRICS:')
             print(metrics)
 
-            df = self.con_q[self.meta_source['source']](sql)
+            df = self.con_q[self.current_db_source['source']](sql)
             print('DATA:')
             print(df.head())
 
@@ -81,22 +102,22 @@ class Plots:
         from google.cloud import bigquery
         from google.oauth2 import service_account
 
-        if self.meta_source['connection_type'] == 'service_account':
-            credentials = service_account.Credentials.from_service_account_file(self.meta_source['sa_path'])
+        if self.current_db_source['connection_type'] == 'service_account':
+            credentials = service_account.Credentials.from_service_account_file(self.current_db_source['sa_path'])
             self.client = bigquery.Client(
                 credentials=credentials,
-                project=self.meta_source['project'],
+                project=self.current_db_source['project'],
             )
-        elif self.meta_source['connection_type'] == 'personal_account':
+        elif self.current_db_source['connection_type'] == 'personal_account':
             # personal account ran from identification before
             # gcloud auth application-default login
             self.client = bigquery.Client(
-                project=self.meta_source['project'],
+                project=self.current_db_source['project'],
             )
 
     def _connect_postgresql(self):
         from sqlalchemy import create_engine
-        db_string = f"postgres://{self.meta_source['user']}:{self.meta_source['password']}@{self.meta_source['host']}:{self.meta_source['port']}/{self.meta_source['database']}"
+        db_string = f"postgres://{self.current_db_source['user']}:{self.current_db_source['password']}@{self.current_db_source['host']}:{self.current_db_source['port']}/{self.current_db_source['database']}"
         self.client = create_engine(db_string)
 
     def _data_bigquery(self, sql):
@@ -427,17 +448,17 @@ class Plots:
         from google.oauth2 import service_account
         from google.cloud import storage
 
-        if self.meta_source['connection_type'] == 'service_account':
-            credentials = service_account.Credentials.from_service_account_file(self.meta_source['sa_path'])
+        if self.current_db_source['connection_type'] == 'service_account':
+            credentials = service_account.Credentials.from_service_account_file(self.current_db_source['sa_path'])
             bucket_client = storage.Client(
                 credentials=credentials,
-                project=self.meta_source['project'],
+                project=self.current_db_source['project'],
             )
-        elif self.meta_source['connection_type'] == 'personal_account':
+        elif self.current_db_source['connection_type'] == 'personal_account':
             # personal account ran from identification before
             # gcloud auth application-default login
             bucket_client = storage.Client(
-                project=self.meta_source['project'],
+                project=self.current_db_source['project'],
             )
 
         self.bucket = bucket_client.get_bucket(self.plot_caching['cache_bucket'])

@@ -14,6 +14,7 @@ class SqlBuilder:
     '''
 
     def __init__(self, **kwargs):
+
         self.metrics = kwargs['metrics'].split(';')
         self.dimensions = kwargs['dimensions'].split(';')
         self.source = kwargs['source']
@@ -23,15 +24,15 @@ class SqlBuilder:
         self.filters = kwargs['filters']
         self.having = kwargs['having']
         self.show_top_n = kwargs['show_top_n']
-
         self.data_source = kwargs['data_source']
-        self.meta_source = kwargs['meta_source']
 
-        self.project = self.meta_source['project']
-        self.file_format = self.meta_source['file_format']
-        self.schema = self.meta_source['schema']
+        self.current_db_source = kwargs['current_db_source']
+
+        self.project = self.current_db_source['project']
+        self.file_format = self.current_db_source['file_format']
 
         self.df_name = None
+        self.schema = None
         self.calculations = None
         self.calculations_full = None
 
@@ -192,6 +193,7 @@ FROM ({sql0}) a"""
         # read table name
         try:
             self.df_name = self.data_source[self.source]['table']
+            self.schema = self.data_source[self.source]['schema']
 
             # calculations
             if self.check_key(self.data_source[self.source], 'calculations'):

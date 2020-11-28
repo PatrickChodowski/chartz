@@ -12,7 +12,7 @@ def handle_configs(lib_path):
         settings = read_config(f'{config_path}settings.yaml')
         data_sources = read_config(f'{config_path}data_sources.yaml')
         main_filters = read_config(f'{lib_path}chartz_static/main_filters.yaml')
-        source = settings['data_source']
+
         main_filters['data_source']['options'] = list()
         for k in data_sources.keys():
             d = dict()
@@ -20,12 +20,8 @@ def handle_configs(lib_path):
             d['name'] = k
             main_filters['data_source']['options'].append(d)
 
-        act_check = [dsd['active'] for dsd in source]
-        which_active = [i for i, x in enumerate(act_check) if x][0]
-        assert isinstance(which_active, int)
-        source = source[which_active]
         setup = dict()
-        setup['source'] = source
+        setup['db_source'] = settings['db_source']
         setup['settings'] = settings
         setup['add_filters'] = list(filters.keys())
         setup['dim_filters'] = filters
@@ -33,9 +29,6 @@ def handle_configs(lib_path):
         setup['main_filters'] = main_filters
         setup['plot_caching'] = settings['plot_caching']
         return setup
-    except AssertionError:
-        if type(which_active) != int:
-            print('Please make sure you have exactly 1 active data source in data_sources.yaml')
     except FileNotFoundError as e:
         print(e)
 
@@ -61,9 +54,7 @@ data_source:
      source: 'bigquery'
      project: 'project_name'
      connection_type: 'personal_account' # 'service_account'
-     schema: 'dash'
      sa_path: 'sa_file_path.json' # only if connection type is service account
-     active: True
 
    - name: 'pgsql'
      source: 'postgresql'
@@ -72,8 +63,6 @@ data_source:
      host: '127.0.0.1'
      port: '5432'
      database: 'exampledb'
-     schema: 'dash'
-     active: False
 
      """
     return settings_example
@@ -114,6 +103,8 @@ def create_data_sources():
 unique_ds_name:
   value: 'unique_ds_name'
   table: 'actual_table_name'
+  schema: 'table_schema_name'
+  db_source: 'db_source_from_settings'
   plots:
     - 'bar'
     - 'table'
@@ -225,6 +216,8 @@ def make_table_yml(table_unique_name, client, project, dataset, table, limit=100
     table_meta[table_unique_name] = dict()
     table_meta[table_unique_name]['value'] = table_unique_name
     table_meta[table_unique_name]['table'] = table
+    table_meta[table_unique_name]['schema'] = dataset
+    table_meta[table_unique_name]['db_source'] = 'db_source_from_settings'
     table_meta[table_unique_name]['plots'] = ['bar', 'points', 'time', 'box', 'table']
     table_meta[table_unique_name]['dimensions'] = [''] + possible_dimensions
     table_meta[table_unique_name]['metrics'] = possible_metrics

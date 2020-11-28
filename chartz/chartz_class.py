@@ -32,7 +32,7 @@ else:
                   bg_color=setup['settings']['bg_color'],
                   add_filters=setup['add_filters'],
                   data_source=setup['data_sources'],
-                  meta_source=setup['source'],
+                  db_source=setup['db_source'],
                   plot_caching=setup['plot_caching']
                   )
 
@@ -60,7 +60,7 @@ def get_data_sources():
         ds_data = setup['data_sources'][args['data_source']]
 
         # check if any of req. keys is missing and add empty if it is
-        req_keys = ['value', 'table', 'ploys', 'dimensions', 'metrics', 'calculations', 'fixed_filters']
+        req_keys = ['value', 'table', 'ploys', 'dimensions', 'metrics', 'calculations', 'fixed_filters', 'db_source']
         for rk in req_keys:
             if rk not in ds_data.keys():
                 ds_data[rk] = ['']
@@ -79,6 +79,18 @@ def get_filter_info():
 def get_settings():
     return setup['settings']
 
+@chartz.route('/activate_db_source', methods=['POST'])
+def activate_db_source():
+    try:
+        args = request.args.to_dict()
+        db_source = args['db_source']
+        if (plots.query_source == db_source) & (plots.client is not None):
+            return 'connection is already set up'
+        else:
+            plots._create_connection(db_source)
+            return 'created new connection'
+    except KeyError as e:
+        return str(e)
 
 @chartz.route('/plot/<type>', methods=['POST', 'GET'])
 def plot(type):

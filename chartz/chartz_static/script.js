@@ -152,6 +152,17 @@ $("document").ready(function(){
     open_menu_btn.addEventListener('click', open_filter);
 
 
+    // when data source changes we check connection and reconnect to new db_source if needed
+    function handle_db_source(db_source){
+        axios.post(`/activate_db_source?db_source=${db_source}`)
+        .then((response) => {
+            console.log(response);
+        }, (error) => {
+          console.log(error);
+        });
+    };
+
+
     // handle info about data sources
     function handle_data_sources(x){
         try{
@@ -159,9 +170,14 @@ $("document").ready(function(){
             let metrics = x['metrics'];
             let calculations = x['calculations'];
             let fixed_filters = x['fixed_filters'];
+
+            let db_source = x['db_source'];
+            handle_db_source(db_source);
+
+
+
             let plots = x['plots'];
-            let table = x['value'];
-            f_vars['source'] = table;
+            f_vars['source'] = x['value'];
             f_vars['fixed_filters'] = fixed_filters;
 
             //remove old filters

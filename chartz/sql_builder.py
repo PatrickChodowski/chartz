@@ -96,7 +96,7 @@ WHERE 1=1 {where_str} {ord_txt}"""
 
         for metric in self.metrics:
             if metric not in self.calculations:
-                metric_queries.append(f"{self.aggr_type.replace('ntile_','')}{metric}) AS {metric}")
+                metric_queries.append(f"{aggr_type.replace('ntile_','')}{metric}) AS {metric}")
             else:
                 calc_list.append(f" {self.calculations_full[metric]} AS {metric} ")
 

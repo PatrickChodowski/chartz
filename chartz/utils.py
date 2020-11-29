@@ -260,4 +260,4 @@ def make_table_filters(df, possible_dimensions):
 
         import yaml
         with open(f'filters_temp.yaml', 'w') as file:
-            table_meta_yml = yaml.dump(filters_list, file, allow_unicode=True)
+            table_meta_yml = yaml.dump(dict(filters_list), file, allow_unicode=True)

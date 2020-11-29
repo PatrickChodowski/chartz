@@ -49,7 +49,7 @@ plot_caching:
   cache_bucket: "bucket_name" #works only if cache_storage is gcpbucket
   cache_path: "./chartz_configs/cache"  #cache for gcpbucket
 
-data_source:
+db_source:
    - name: 'gbq'
      source: 'bigquery'
      project: 'project_name'

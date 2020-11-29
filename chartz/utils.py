@@ -229,7 +229,7 @@ def make_table_yml(table_unique_name, client, project, dataset, table, limit=100
         table_meta_yml = yaml.dump(table_meta, file)
 
 
-def create_filters(df, possible_dimensions):
+def make_table_filters(df, possible_dimensions):
     filters_list = list()
 
     for col in possible_dimensions:

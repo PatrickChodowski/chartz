@@ -199,7 +199,7 @@ def make_table_yml(table_unique_name, client, project, dataset, table, limit=100
 
     # get object/bool
     possible_dimensions = df.select_dtypes(include=['object', 'bool', 'category', 'datetime64']).columns.to_list()
-    create_filters(df, possible_dimensions)
+    make_table_filters(df, possible_dimensions)
     # get numerics
     possible_metrics = df.select_dtypes(include=['number', 'integer']).columns.to_list()
 

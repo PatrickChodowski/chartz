@@ -84,6 +84,10 @@ WHERE 1=1 {where_str} {ord_txt}"""
         metric_queries = list()
         hv_txt = ''
 
+        aggr_type = self.aggr_type + '('
+        if self.aggr_type == 'count_unique':
+            aggr_type = ' COUNT(DISTINCT '
+
         if (self.dimensions.__len__() > 0) & (self.dimensions != ['']):
             dim_txt = ', '.join(self.dimensions)
             select_list.append(dim_txt)
@@ -92,7 +96,7 @@ WHERE 1=1 {where_str} {ord_txt}"""
 
         for metric in self.metrics:
             if metric not in self.calculations:
-                metric_queries.append(f"{self.aggr_type.replace('ntile_','')}({metric}) AS {metric}")
+                metric_queries.append(f"{self.aggr_type.replace('ntile_','')}{metric}) AS {metric}")
             else:
                 calc_list.append(f" {self.calculations_full[metric]} AS {metric} ")
 
@@ -212,6 +216,7 @@ FROM ({sql0}) a"""
                           'min': self._gb_aggr_select,
                           'avg': self._gb_aggr_select,
                           'count': self._gb_aggr_select,
+                          'count_unique': self._gb_aggr_select,
                           'quantiles': self._quantiles_aggr_select,
                           'ntile': self._ntile_aggr_select,
                           'ntile_avg': self._ntile_over_aggr_select,

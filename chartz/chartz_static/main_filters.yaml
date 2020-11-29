@@ -43,6 +43,8 @@ aggr_type:
       value: 'min'
     - name: 'Count'
       value: 'count'
+    - name: 'Count Unique'
+      value: 'count_unique'
     - name: 'Quantiles'
       value: 'quantiles'
     - name: 'Percentile'

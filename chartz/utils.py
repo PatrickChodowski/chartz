@@ -55,6 +55,7 @@ db_source:
      project: 'project_name'
      connection_type: 'personal_account' # 'service_account'
      sa_path: 'sa_file_path.json' # only if connection type is service account
+     file_format: 'sql'
 
    - name: 'pgsql'
      source: 'postgresql'

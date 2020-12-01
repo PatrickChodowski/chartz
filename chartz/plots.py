@@ -27,7 +27,6 @@ class Plots:
         self.query_source = None
         self.current_db_source = None
 
-
         self.con_q = {
             'bigquery': self._data_bigquery,
             'postgresql': self._data_sql
@@ -51,7 +50,6 @@ class Plots:
             con_dict[self.current_db_source['source']]()
         except AssertionError:
             return 'Make sure that active source in settings is one of [bigquery. postgresql]'
-
 
     @staticmethod
     def _build_sql(**params):
@@ -81,12 +79,11 @@ class Plots:
         '''
         for col in df.columns.to_list():
             if col not in metrics:
-                #df[col].replace('None', 'vcv', inplace=True)
+                # df[col].replace('None', 'vcv', inplace=True)
                 df[col].fillna(value='', inplace=True)
                 if df[col].dtypes != 'object':
                     df[col] = df[col].astype(str)
         return df
-
 
     def _handle_data(self, **params):
         '''
@@ -162,7 +159,7 @@ class Plots:
 
             return df
         except Exception as e:
-            #return f"<br><br> Plot error: <br> {str(e)}"
+            # return f"<br><br> Plot error: <br> {str(e)}"
             raise
 
     def _data_sql(self, sql):
@@ -179,7 +176,7 @@ class Plots:
                 raise Exception(f"""Empty dataset. Please double check query: {sql}""")
             return df
         except Exception as e:
-            #return f"<br><br> Plot error: <br> {str(e)}"
+            # return f"<br><br> Plot error: <br> {str(e)}"
             raise
 
     def plot_box(self, **params):
@@ -293,7 +290,7 @@ class Plots:
                     width=0.3, fill_color=self.f_color, line_color=self.f_color)
             p2 = self._style_plot(p2)
             p2.xaxis.major_label_orientation = 0.9
-            p2.left[0].formatter.use_scientific = False
+
             return p2
         except Exception as e:
             return f"<br><br> Plot error: <br> {str(e)}"
@@ -396,7 +393,30 @@ class Plots:
         except Exception as e:
             return f"<br><br> Plot error: <br> {str(e)}"
 
+    def _num_axis_formatter(self, p):
+        from bokeh.models import NumeralTickFormatter
+        '''
+        Checks if plots axis are numeric, sets the formatter if true
+        :return: plot with axis formatted
+        NumeralTick tylko wtedy gdy max range >= 1000 
+
+        '''
+        if (p.y_range.start is not None) & (p.y_range.end is not None):
+            if p.y_range.end - p.y_range.start >= 1000:
+                p.yaxis.formatter = NumeralTickFormatter(format="0,0")
+
+        if (p.x_range.start is not None) & (p.x_range.end is not None):
+            if p.x_range.end - p.x_range.start >= 1000:
+                p.xaxis.formatter = NumeralTickFormatter(format="0,0")
+
+        return p
+
     def _style_plot(self, p):
+        '''
+        Adds styling to the plot
+        :param p: plot object
+        :return: styled plot object
+        '''
         p.toolbar.logo = None
         p.toolbar_location = 'below'
         p.xgrid.grid_line_color = self.f_color
@@ -419,6 +439,8 @@ class Plots:
         t.text = self.title_text
         t.text_color = self.f_color
         p.title = t
+
+        p = self._num_axis_formatter(p)
 
         return p
 

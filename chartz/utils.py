@@ -231,33 +231,44 @@ def make_table_yml(table_unique_name, client, project, dataset, table, limit=100
 
 
 def make_table_filters(df, possible_dimensions):
-    filters_list = list()
-
+    from pandas.api.types import is_numeric_dtype
+    filters = dict()
     for col in possible_dimensions:
         filter_dict = dict()
         filter_dict[col] = dict()
+        col_options = list(set(df[col].to_list()))
+        n_options = col_options.__len__()
 
-        col_options = list(df[col].unique())
+        # determine filter type
+        if is_numeric_dtype(df[col]):
+            # numbers
+            if n_options <= 2:
+                # hopefully binary
+                dim_type = 'checkbox'
+            else:
+                # any numeric
+                dim_type = 'number'
+                col_options = {'min': min(col_options), 'max': max(col_options)}
+        else:
+            # strings
+            if n_options >= 20:
+                dim_type = 'text'
+                col_options = []
+            elif n_options <= 4:
+                dim_type = 'checkbox'
+            else:
+                dim_type = 'choices'
 
         filter_dict[col]['name'] = col
         filter_dict[col]['value'] = col
         filter_dict[col]['operators'] = ['eq']
         filter_dict[col]['duplicable'] = False
-
-        # possible types: choices, checkbox, number, select
-        # define the type smart way (depends on the options len)
-
-        if col_options.__len__() <= 4:
-            dim_type = 'checkbox'
-        else:
-            dim_type = 'choices'
-
         filter_dict[col]['type'] = dim_type
         filter_dict[col]['options'] = col_options
 
-        # add to list
-        filters_list.append(filter_dict)
+        # add to main dict
+        filters[col] = filter_dict
 
-        import yaml
-        with open(f'filters_temp.yaml', 'w') as file:
-            table_meta_yml = yaml.dump(dict(filters_list), file, allow_unicode=True)
+    import yaml
+    with open(f'filters_temp.yaml', 'w') as file:
+        table_meta_yml = yaml.dump(filters, file, allow_unicode=True)

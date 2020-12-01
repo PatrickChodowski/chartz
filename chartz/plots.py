@@ -69,6 +69,21 @@ class Plots:
         except Exception as e:
             raise
 
+    @staticmethod
+    def _replace_nulls(df, metrics):
+        '''
+        Replaces None on dimensions
+        :param df: data from db
+        :param metrics: list of metrics
+        :return: df with replaces values
+        '''
+        for col in df.columns.to_list():
+            if col not in metrics:
+                #df[col].replace('None', 'vcv', inplace=True)
+                df[col].fillna(value='', inplace=True)
+        return df
+
+
     def _handle_data(self, **params):
         '''
         1) creates sql query
@@ -89,6 +104,9 @@ class Plots:
             print(metrics)
 
             df = self.con_q[self.current_db_source['source']](sql)
+            # replace missing values on dimensions:
+            df = self._replace_nulls(df, metrics)
+
             print('DATA:')
             print(df.head())
 
@@ -97,6 +115,10 @@ class Plots:
             raise
 
     def _connect_bigquery(self):
+        '''
+        Method called when db_source for query is bigquery
+        :return: Connects to bigquery and updates self.client
+        '''
         from google.cloud import bigquery
         from google.oauth2 import service_account
 
@@ -114,11 +136,20 @@ class Plots:
             )
 
     def _connect_postgresql(self):
+        '''
+        Method called when db_source for query is postgres
+        :return: Connects to postgres and updates self.client
+        '''
         from sqlalchemy import create_engine
         db_string = f"postgres://{self.current_db_source['user']}:{self.current_db_source['password']}@{self.current_db_source['host']}:{self.current_db_source['port']}/{self.current_db_source['database']}"
         self.client = create_engine(db_string)
 
     def _data_bigquery(self, sql):
+        '''
+        Sends sql query to bigquery
+        :param sql: query
+        :return: pandas dataframe
+        '''
         try:
             df = self.client.query(query=sql).to_dataframe()
             df = df.round(3)
@@ -127,9 +158,15 @@ class Plots:
 
             return df
         except Exception as e:
-            return f"<br><br> Plot error: <br> {str(e)}"
+            #return f"<br><br> Plot error: <br> {str(e)}"
+            raise
 
     def _data_sql(self, sql):
+        '''
+        Sends sql query to postgres or other RDBMS
+        :param sql: query
+        :return: pandas dataframe
+        '''
         try:
             import pandas as pd
             df = pd.read_sql(sql, con=self.client)
@@ -138,7 +175,8 @@ class Plots:
                 raise Exception(f"""Empty dataset. Please double check query: {sql}""")
             return df
         except Exception as e:
-            return f"<br><br> Plot error: <br> {str(e)}"
+            #return f"<br><br> Plot error: <br> {str(e)}"
+            raise
 
     def plot_box(self, **params):
         import math

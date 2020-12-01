@@ -70,17 +70,21 @@ class Plots:
             raise
 
     @staticmethod
-    def _replace_nulls(df, metrics):
+    def _clean_dimensions(df, metrics):
         '''
-        Replaces None on dimensions
+         - Replaces None on dimensions
+         - Converts decimal/numeric types to string if not
+         -
         :param df: data from db
         :param metrics: list of metrics
-        :return: df with replaces values
+        :return: df with cleaned dimensions
         '''
         for col in df.columns.to_list():
             if col not in metrics:
                 #df[col].replace('None', 'vcv', inplace=True)
                 df[col].fillna(value='', inplace=True)
+                if df[col].dtypes != 'object':
+                    df[col] = df[col].astype(str)
         return df
 
 
@@ -105,7 +109,7 @@ class Plots:
 
             df = self.con_q[self.current_db_source['source']](sql)
             # replace missing values on dimensions:
-            df = self._replace_nulls(df, metrics)
+            df = self._clean_dimensions(df, metrics)
 
             print('DATA:')
             print(df.head())
